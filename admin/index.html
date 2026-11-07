@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-G0XSr6W13JBDdmRfBOUQKivxK0uKOO5HL9FjFIbyWyk=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-E12Y0uAOM7Xf6vF8nr8/mTnDWZ4HBkmFlYEFrkVXRP4=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -318,12 +318,14 @@ td.ttn { font-size: calc(12px * var(--ts, 1)); }
           <label for="utitle">השם באתר (עד שיש דוח)</label><input id="utitle" maxlength="160" placeholder="אליפות ישראל - יער אודם - יום 3"></div>
         <div class="uh"><b id="ufl">הקבצים</b> <small>לכל סוג קובץ שורה משלו: בוחרים קובץ בשורה שלו, או כמה קבצים יחד – וכל קובץ נכנס לשורה שלו לפי השם</small></div>
         <div class="ubulk"><button type="button" id="ubulk" aria-describedby="ufl">בחירת כמה קבצים יחד…</button><button type="button" id="uclear" hidden>ניקוי הבחירה</button>
-          <input id="ufiles" type="file" multiple accept=".htm,.html,.lxm,.xml,.ocd" hidden aria-hidden="true" tabindex="-1">
+          <input id="ufiles" type="file" multiple accept=".htm,.html,.lxm,.xml,.ocd,.pdf,.docx,.png,.jpg,.jpeg,.webp" hidden aria-hidden="true" tabindex="-1">
           <input id="upick" type="file" hidden aria-hidden="true" tabindex="-1"></div>
         <div id="ulist"></div>
         <p class="note" style="font-size: calc(13px * var(--ts, 1));margin-top:6px">לפני התחרות אפשר להעלות רק את רשימת הזינוק – היא תופיע באתר מיד.
           מרשימת הזינוק נלקחים רק שעה, שם, קטגוריה, מועדון ומסלול – לא טלפונים ולא מספרי SI.</p>
         <label for="ulx">קישור Livelox של האירוע (לא חובה)</label><input id="ulx" dir="ltr" placeholder="https://www.livelox.com/Events/Show/…">
+        <div class="row"><div><label for="ult">נספח כקישור – השם (לא חובה)</label><input id="ult" maxlength="80" placeholder="הדמיית אזור הזינוק"></div>
+          <div><label for="ulu">הכתובת של הנספח</label><input id="ulu" dir="ltr" maxlength="500" placeholder="https://…"></div></div>
         <div class="act"><button type="button" class="pri" id="ugo">העלאה ובניית הניתוח</button></div>
         <p class="msg" id="umsg" role="status"></p>
         <div id="ustat" class="note" aria-live="polite"></div>
@@ -757,7 +759,8 @@ const LXOK = u => /^https:\/\/(www\.)?livelox\.com\/[^\s"'<>\\]*$/i.test(u);
 const IS_START = n => /\.html?$/i.test(n) && /start|זינוק/i.test(n);
 const NAME_OK = n => /^[^\/\\:*?"<>|\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]{1,120}$/.test(n) && !n.startsWith(".") && !n.includes("..")
   && !/[ .]$/.test(n) && !/^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\.|$)/i.test(n) && !/^report_.*\.html$/i.test(n);
-const MAY = n => NAME_OK(n) && (/\.(htm|html|lxm|xml|ocd)$/i.test(n) || ["livelox.txt", "title.txt", "mulka_live.txt", "startlist.html"].includes(n.toLowerCase()));
+const DOCS = /\.(pdf|docx|png|jpe?g|webp)$/i, LINKF = n => /^link-.{1,100}\.txt$/i.test(n);   // the papers for the runners, and links
+const MAY = n => NAME_OK(n) && (/\.(htm|html|lxm|xml|ocd)$/i.test(n) || DOCS.test(n) || LINKF(n) || ["livelox.txt", "title.txt", "mulka_live.txt", "startlist.html"].includes(n.toLowerCase()));
 const FOLDER = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/, RESERVED = new Set(["admin", "fonts", "lapcombat", "series", "clubs"]);
 const slugOf = n => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "competition";
 const MB = 1024 * 1024, LIMIT = () => MODE === "gw" ? 30 : 50;      // MB per file (the gateway takes one file per request)
@@ -810,10 +813,10 @@ const TXT = {
   "livelox.txt": { label: "הקישור החדש לאירוע ב-Livelox", ph: "https://www.livelox.com/Events/Show/…", dir: "ltr", max: 300, ok: LXOK, bad: "רק קישור https לאתר livelox.com" },
   "mulka_live.txt": { label: "הקישור החדש לתוצאות החיות במולקה", ph: "https://jp.mulka2.com/cloud/live/index.jsp?eventId=…", dir: "ltr", max: 300, ok: mkOk, bad: "רק קישור https לאתר mulka2.com" },
   "title.txt": { label: "השם החדש של התחרות באתר (עד שיש דוח)", ph: "אליפות ישראל - יער אודם - יום 3", dir: "auto", max: 160, ok: v => !!v, bad: "כתבו את שם התחרות" } };
-const RPL = n => /\.(htm|html|lxm|xml|ocd)$/i.test(n) || !!TXT[n.toLowerCase()];   // a file that may be replaced by a new version
-const FAMILY = n => /\.html?$/i.test(n) ? ".htm" : (/\.(lxm|xml|ocd)$/i.exec(n) || [])[1] ? "." + /\.(lxm|xml|ocd)$/i.exec(n)[1].toLowerCase() : "";
+const RPL = n => /\.(htm|html|lxm|xml|ocd)$/i.test(n) || DOCS.test(n) || !!TXT[n.toLowerCase()];   // a file that may be replaced by a new version
+const FAMILY = n => DOCS.test(n) ? ".doc" : /\.html?$/i.test(n) ? ".htm" : (/\.(lxm|xml|ocd)$/i.exec(n) || [])[1] ? "." + /\.(lxm|xml|ocd)$/i.exec(n)[1].toLowerCase() : "";
 // what the picker offers: phones do not know .lxm and .ocd, so for those any file (checked after it is picked)
-const ACCEPT = n => /\.html?$/i.test(n) ? ".htm,.html" : /\.xml$/i.test(n) ? ".xml" : "";
+const ACCEPT = n => DOCS.test(n) ? ".pdf,.docx,.png,.jpg,.jpeg,.webp" : /\.html?$/i.test(n) ? ".htm,.html" : /\.xml$/i.test(n) ? ".xml" : "";
 async function showFiles() {
   const box = $("ufolder"), folder = $("ucomp").value;
   box.innerHTML = ""; HAVE_FILES = []; drawRows();
@@ -896,21 +899,25 @@ const ROWS = [
   { k: "xml", label: "המסלולים (IOF XML)", ext: ".xml", accept: ".xml", hint: "קובץ אחד" },
   { k: "ocd", label: "מפת OCAD", ext: ".ocd", accept: "", hint: "קובץ אחד" },
   { k: "start", label: "רשימת זינוק", ext: ".htm", accept: ".htm,.html", hint: "קובץ אחד, נשמר בשם startlist.html" },
+  { k: "planner", label: "דבר המתכנן", ext: ".doc", accept: ".pdf,.docx,.png,.jpg,.jpeg,.webp", hint: "קובץ אחד – יוצג לנווטים בדף התחרות" },
+  { k: "att", label: "נספחים", ext: ".doc", accept: ".pdf,.docx,.png,.jpg,.jpeg,.webp", many: true, hint: "כל קובץ בשמו, למשל מפת הכינוס" },
   { k: "lxm", label: "LapCombat", ext: ".lxm", many: true, extra: true, hint: "מהשם לא ברור אם קטגוריות או מסלולים – ייקרא לפי התוכן" },
-  { k: "", label: "קבצים מסוג לא מוכר", ext: null, many: true, extra: true, hint: "רק htm, lxm, xml או ocd" }];
-const extOf = ext => ext === ".htm" ? "htm או html" : ext.slice(1);      // in Hebrew text without its dot (it would show on the wrong side)
+  { k: "", label: "קבצים מסוג לא מוכר", ext: null, many: true, extra: true, hint: "רק htm, lxm, xml, ocd, PDF, Word או תמונה" }];
+const extOf = ext => ext === ".htm" ? "htm או html" : ext === ".doc" ? "PDF, Word או תמונה" : ext.slice(1);      // in Hebrew text without its dot (it would show on the wrong side)
 const kindOf = n => IS_START(n) ? "start" : /\.html?$/i.test(n) ? "split" : /\.lxm$/i.test(n) ? (/categor/i.test(n) ? "cat" : /course/i.test(n) ? "course" : "lxm")
-  : /\.xml$/i.test(n) ? "xml" : /\.ocd$/i.test(n) ? "ocd" : "";
+  : /\.xml$/i.test(n) ? "xml" : /\.ocd$/i.test(n) ? "ocd" : DOCS.test(n) ? (/^planner\.|מתכנן|planner/i.test(n) ? "planner" : "att") : "";
 const rowOf = k => ROWS.find(r => r.k === k);
 const fsize = n => n < MB ? `${Math.max(1, Math.round(n / 1024 || 0))}KB` : `${(n / MB).toFixed(1)}MB`;
 const CHOSEN = [];             // {f: the File, k: its row}
 let HAVE_FILES = [], PICK = null;          // what the chosen competition has (showFiles); the row a pick is for
 // the name it is saved under: a start list as startlist.html; a name the competition has in other capitals, as it is there
-const targetOf = c => { const n = c.k === "start" ? "startlist.html" : c.f.name; return HAVE_FILES.find(h => h.name.toLowerCase() === n.toLowerCase())?.name || n; };
+const targetOf = c => { const ext = (/\.[^.]+$/.exec(c.f.name) || [""])[0].toLowerCase();
+  const n = c.k === "start" ? "startlist.html" : c.k === "planner" ? "planner" + ext : c.k === "att" && !/^att-/i.test(c.f.name) ? "att-" + c.f.name : c.f.name;
+  return HAVE_FILES.find(h => h.name.toLowerCase() === n.toLowerCase())?.name || n; };
 const badOf = c => { const r = rowOf(c.k), L = LIMIT();
-  if (!r || r.ext == null) return "סוג קובץ לא מוכר – רק htm, lxm, xml או ocd";
+  if (!r || r.ext == null) return "סוג קובץ לא מוכר – רק htm, lxm, xml, ocd, PDF, Word או תמונה";
   if (FAMILY(c.f.name) !== r.ext) return `צריך קובץ מסוג ${extOf(r.ext)}`;
-  if (c.k !== "start" && !NAME_OK(c.f.name)) return "שם קובץ לא תקין";
+  if (c.k !== "start" && (!NAME_OK(c.f.name) || !NAME_OK(targetOf(c)))) return "שם קובץ לא תקין";
   if (!c.f.size) return "הקובץ ריק";
   if (c.f.size > L * MB) return `גדול מ-${L}MB`;
   return ""; };
@@ -934,11 +941,11 @@ function drawRows() {
     const mine = CHOSEN.map((c, i) => [c, i]).filter(([c]) => c.k === r.k), g = gone.filter(h => kindOf(h.name) === r.k);
     const old = r.extra ? [] : HAVE_FILES.filter(h => kindOf(h.name) === r.k);      // the extra rows: only what is chosen now
     if (r.extra && !mine.length) return "";
-    return `<li class="urow" data-k="${r.k}"><div class="ur-t"><b>${esc(r.label)}</b> <small>${r.ext ? `<span dir="ltr">${r.ext === ".htm" ? ".htm / .html" : r.ext}</span> · ` : ""}${esc(r.hint)}</small></div>`
+    return `<li class="urow" data-k="${r.k}"><div class="ur-t"><b>${esc(r.label)}</b> <small>${r.ext ? `<span dir="ltr">${r.ext === ".htm" ? ".htm / .html" : r.ext === ".doc" ? ".pdf / .docx / .png / .jpg" : r.ext}</span> · ` : ""}${esc(r.hint)}</small></div>`
       + `<div class="ur-have">${old.length ? `בתחרות: ${old.map(h => `<span dir="auto">${esc(h.name)}</span>`).join(", ")}` : r.extra ? "" : "עוד אין בתחרות"}</div>`
       + (r.extra ? "" : `<button type="button" data-pick="${r.k}" aria-label="${r.many ? "הוספת קבצים" : "בחירת קובץ"}: ${esc(r.label)}">${r.many ? "הוספת קבצים…" : mine.length || old.length ? "קובץ אחר…" : "בחירת קובץ…"}</button>`)
       + (mine.length ? `<div class="ur-list">${mine.map(([c, i]) => { const bad = badOf(c);
-          return `<div class="ur-new${bad ? " bad" : ""}"><span dir="auto">${esc(c.f.name)}</span><small>${bad ? esc(bad) : `${c.k === "start" ? "יישמר כ-startlist.html · " : ""}${fsize(c.f.size)}`}</small>`
+          return `<div class="ur-new${bad ? " bad" : ""}"><span dir="auto">${esc(c.f.name)}</span><small>${bad ? esc(bad) : `${targetOf(c) !== c.f.name ? `יישמר כ-${iso(esc(targetOf(c)))} · ` : ""}${fsize(c.f.size)}`}</small>`
             + `<button type="button" data-unpick="${i}" aria-label="ביטול הבחירה: ${esc(c.f.name)}">✕</button></div>`; }).join("")}</div>` : "")
       + (g.length ? `<div class="ur-gone">בהעלאה יחליף את ${g.map(h => `<span dir="auto">${esc(h.name)}</span>`).join(", ")}</div>` : "")
       + `</li>`; }).join("")}</ul>`;
@@ -968,13 +975,17 @@ async function upload() {
     const same = DIRS.find(x => x !== folder && slugOf(x) === slugOf(folder));
     if (same) return say(m, `כבר יש תחרות בכתובת הזו: ${same}. בחרו אותה ברשימה.`);
   }
-  if (!files.length && !lx) return say(m, "בחרו קבצים להעלאה, או קישור Livelox");
+  const lt = $("ult").value.replace(/\s+/g, " ").trim(), lu = $("ulu").value.trim(), lnk = lt || lu ? `link-${lt}.txt` : "";
+  if (lnk && (!lt || !lu)) return say(m, "לנספח כקישור צריך גם שם וגם כתובת");
+  if (lnk && !/^https:\/\/[^\s"'<>\\]{1,500}$/i.test(lu)) return say(m, "כתובת הנספח: רק קישור https");
+  if (lnk && !NAME_OK(lnk)) return say(m, "שם הנספח: בלי / \\ : * ? \" < > |");
+  if (!files.length && !lx && !lnk) return say(m, "בחרו קבצים להעלאה, קישור Livelox או נספח כקישור");
   const L = LIMIT(), bad = files.find(badOf);
   if (bad) return say(m, `הקובץ ${iso(bad.f.name)} לא מתאים: ${badOf(bad)}`
     + (bad.f.size > L * MB && MODE === "gw" ? ` (בכניסה במייל עד ${L}MB לקובץ; קובץ גדול יותר: בעל האתר, מהמחשב)` : ""));
   if (files.reduce((s, c) => s + c.f.size, 0) > 90 * MB) return say(m, "יותר מ-90MB בפעם אחת – העלו בכמה חלקים");
   const isNew = !$("ucomp").value, title = isNew ? ($("utitle")?.value || "").trim().slice(0, 160) : "", gone = isNew ? [] : goneOf();
-  if (files.length + gone.length + (title ? 1 : 0) + (lx ? 1 : 0) > 60) return say(m, "יותר מ-60 קבצים בפעם אחת – העלו בכמה חלקים");
+  if (files.length + gone.length + (title ? 1 : 0) + (lx ? 1 : 0) + (lnk ? 1 : 0) > 60) return say(m, "יותר מ-60 קבצים בפעם אחת – העלו בכמה חלקים");
   if (lx && !LXOK(lx)) return say(m, "רק קישור https לאתר livelox.com");
   $("ugo").disabled = true; $("ustat").textContent = "";
   try {
@@ -986,10 +997,11 @@ async function upload() {
     gone.forEach(h => tree.push({ path: `${folder}/${h.name}`, mode: "100644", type: "blob", sha: null }));     // replaced by the new one
     if (title) tree.push({ path: `${folder}/title.txt`, mode: "100644", type: "blob", sha: await B.blob(b64enc(title + "\n")) });
     if (lx) tree.push({ path: `${folder}/livelox.txt`, mode: "100644", type: "blob", sha: await B.blob(b64enc(lx + "\n")) });
+    if (lnk) tree.push({ path: `${folder}/${lnk}`, mode: "100644", type: "blob", sha: await B.blob(b64enc(lu + "\n")) });
     say(m, "שומר…", true);
-    const sha = await B.commit(tree, `${folder}: ${files.length} files${gone.length ? ` (replacing ${gone.length})` : ""}${lx ? " + Livelox link" : ""}`);
+    const sha = await B.commit(tree, `${folder}: ${files.length} files${gone.length ? ` (replacing ${gone.length})` : ""}${lx ? " + Livelox link" : ""}${lnk ? " + a link" : ""}`);
     say(m, `הקבצים נשמרו ב-${folder}${gone.length ? `, במקום ${gone.map(h => iso(h.name)).join(", ")}` : ""}. GitHub בונה עכשיו את הניתוח.`, true);
-    CHOSEN.length = 0; $("ufiles").value = ""; $("ulx").value = ""; drawRows();
+    CHOSEN.length = 0; $("ufiles").value = ""; $("ulx").value = ""; $("ult").value = ""; $("ulu").value = ""; drawRows();
     if (isNew) { ["uname", "utitle"].forEach(i => { if ($(i)) $(i).value = ""; }); setDate("udate", ""); }
     if (!DIRS.includes(folder)) fillComps([folder, ...DIRS], folder);       // it has files now
     $("ucomp").value = folder; $("unew").hidden = true; showFiles();
