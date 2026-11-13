@@ -1,0 +1,1408 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2xBWLBUru/+81fOF0qdSqwwQcZaENKVRsAEuj8qUzO4=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מעקב נווטים בשטח</title>
+<style>
+:root { color-scheme: light;
+  --paper: #ffffff; --paper-2: #f0efec; --surface: #ffffff; --page: #ffffff; --chip: #f0efec;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #6b6a65; --rule: #e1e0d9; --rule-2: #c3c2b7; --grid: var(--rule); --ring: rgba(11,11,11,0.10);
+  --accent: #2671cc; --on-accent: #fff; --tab-on: color-mix(in srgb, var(--accent) 88%, #000);
+  --green: #006300; --bad: #c2410c; --red: #b3261e; --amber: #8a5a00; --soon: #eef5fd; --late: #fde3e1; --outbg: #fff4d6;
+  --s1: #2a78d6; --s2: #eb6834; --s7: #6250d6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark;
+  --paper: #0d0d0d; --paper-2: #2c2c2a; --surface: #1a1a19; --page: #0d0d0d; --chip: #2c2c2a;
+  --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781; --rule: #2c2c2a; --rule-2: #4a4a46; --ring: rgba(255,255,255,0.10);
+  --accent: #3987e5; --green: #0ca30c; --bad: #f0936a; --red: #ff8a80; --amber: #f3c15f; --soon: #1a2a3f; --late: #4a1d1a; --outbg: #3d3214;
+  --s1: #3987e5; --s2: #d95926; --s7: #9085e9; } }
+:root[data-theme="dark"] { color-scheme: dark;
+  --paper: #0d0d0d; --paper-2: #2c2c2a; --surface: #1a1a19; --page: #0d0d0d; --chip: #2c2c2a;
+  --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781; --rule: #2c2c2a; --rule-2: #4a4a46; --ring: rgba(255,255,255,0.10);
+  --accent: #3987e5; --green: #0ca30c; --bad: #f0936a; --red: #ff8a80; --amber: #f3c15f; --soon: #1a2a3f; --late: #4a1d1a; --outbg: #3d3214;
+  --s1: #3987e5; --s2: #d95926; --s7: #9085e9; }
+/* high contrast: black on white (white on black in the dark), strong lines, darker colours - as in the reports */
+:root[data-contrast="high"] { --paper: #fff; --paper-2: #e6e6e6; --surface: #fff; --page: #fff; --chip: #e6e6e6;
+  --ink: #000; --ink-2: #111; --muted: #333; --rule: #767676; --rule-2: #444; --ring: #444;
+  --accent: #0047ab; --tab-on: var(--accent); --on-accent: #fff; --green: #005a00; --bad: #9a2a00; --red: #c00000; --s1: #0047ab; --s2: #b33a00; --s7: #4b2fbf; }
+@media (prefers-color-scheme: dark) { :root[data-contrast="high"]:not([data-theme="light"]) { --paper: #000; --paper-2: #222; --surface: #000; --page: #000; --chip: #222;
+  --ink: #fff; --ink-2: #f2f2f2; --muted: #d0d0d0; --rule: #8c8c8c; --rule-2: #bdbdbd; --ring: #bdbdbd;
+  --accent: #7cb8ff; --on-accent: #000; --green: #4ee04e; --bad: #ffab80; --red: #ff7a7a; --s1: #7cb8ff; --s2: #ff9a5c; --s7: #b3a8ff; } }
+:root[data-theme="dark"][data-contrast="high"] { --paper: #000; --paper-2: #222; --surface: #000; --page: #000; --chip: #222;
+  --ink: #fff; --ink-2: #f2f2f2; --muted: #d0d0d0; --rule: #8c8c8c; --rule-2: #bdbdbd; --ring: #bdbdbd;
+  --accent: #7cb8ff; --on-accent: #000; --green: #4ee04e; --bad: #ffab80; --red: #ff7a7a; --s1: #7cb8ff; --s2: #ff9a5c; --s7: #b3a8ff; }
+body::before { content: ""; display: block; height: 4px; background: linear-gradient(90deg, var(--s2), var(--s7) 50%, var(--s1)); }   /* as on the reports */
+
+a { color: var(--accent); } a:visited { color: var(--accent); }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: calc(15px * var(--ts, 1))/1.55 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 18px max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1.5px solid var(--ink); padding-bottom: 10px; }
+header a { color: var(--ink-2); }
+button { font: inherit; font-weight: 600; border-radius: 8px; padding: 7px 12px; cursor: pointer; border: 1px solid var(--rule-2); background: var(--surface); color: var(--ink); }
+button.pri { background: var(--tab-on); color: var(--on-accent); border-color: var(--tab-on); } button:disabled { opacity: .5; }
+.kicker { margin: 18px 0 2px; color: var(--red); font-weight: 700; letter-spacing: .06em; font-size: calc(13px * var(--ts, 1)); }
+h1 { margin: 0; font-size: calc(26px * var(--ts, 1)); line-height: 1.25; } .sub { color: var(--ink-2); margin: 6px 0 12px; }
+.sum { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.sum span { background: var(--surface); border: 1px solid var(--rule-2); border-radius: 10px; padding: 8px 12px; } .sum b { font-size: calc(20px * var(--ts, 1)); display: block; line-height: 1.1; }
+.sum .late { border-color: var(--red); color: var(--red); } .sum .out { border-color: var(--amber); }
+#q { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--rule-2); border-radius: 8px; background: var(--surface); color: var(--ink); margin: 0 0 12px; }
+section { margin: 14px 0 0; } h2 { font-size: calc(17px * var(--ts, 1)); margin: 0 0 6px; } h2 small { color: var(--muted); font-weight: 400; }
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; background: var(--surface); border: 1px solid var(--rule);
+           border-radius: 10px; padding: 9px 12px; margin: 0 0 6px; }
+.rows li.late { background: var(--late); border-color: var(--red); } .rows li.out { background: var(--outbg); }
+.rows .n { font-weight: 700; } .rows .m { color: var(--ink-2); font-size: calc(13px * var(--ts, 1)); grid-column: 1; } .rows .x { grid-row: 1 / span 2; grid-column: 2; text-align: left; }
+.rows .x b { display: block; font-variant-numeric: tabular-nums; } .rows .x small { color: var(--muted); } .rows .x small.exp { display: block; }
+/* the day: how many runners were out on the course, minute by minute (time left to right, as in the reports' charts) */
+.day { margin: 22px 0 8px; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 14px 10px; }
+.day[hidden] { display: none; } .day h2 { font-size: calc(16px * var(--ts, 1)); margin: 0 0 2px; }
+.day-s { margin: 0 0 8px; color: var(--ink-2); font-size: calc(13.5px * var(--ts, 1)); } .day-s b { color: var(--ink); }
+.day-n { margin: 6px 0 0; color: var(--muted); font-size: calc(12px * var(--ts, 1)); }
+.day-p { position: relative; direction: ltr; }
+.day-p svg { display: block; width: 100%; height: 180px; touch-action: pan-y; outline-offset: 2px; }
+.day-p svg:focus-visible { outline: 3px solid var(--accent); }
+.day-p .g { stroke: var(--rule); stroke-width: 1; shape-rendering: crispEdges; }
+.day-p .ax { fill: var(--muted); font-size: calc(11px * var(--ts, 1)); font-variant-numeric: tabular-nums; }
+.day-p .lb { fill: var(--ink-2); font-size: calc(11.5px * var(--ts, 1)); font-weight: 600; font-variant-numeric: tabular-nums; }
+.day-p .ar { fill: var(--amber); fill-opacity: .12; } .day-p .ln { fill: none; stroke: var(--amber); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.day-p .now, .day-p .xh { stroke: var(--ink-2); stroke-width: 1; shape-rendering: crispEdges; }
+.day-p .dot { fill: var(--amber); stroke: var(--surface); stroke-width: 2; }
+.day-tip { position: absolute; top: 2px; pointer-events: none; direction: rtl; white-space: nowrap; background: var(--surface); color: var(--ink-2);
+  border: 1px solid var(--rule-2); border-radius: 8px; padding: 3px 9px; font-size: calc(12.5px * var(--ts, 1)); box-shadow: 0 4px 14px rgba(0,0,0,.14); }
+.day-tip[hidden] { display: none; } .day-tip b { color: var(--ink); font-size: calc(15px * var(--ts, 1)); margin-inline-end: 4px; }
+.day-t { margin-top: 8px; } .day-t summary { cursor: pointer; font-weight: 600; color: var(--accent); font-size: calc(13.5px * var(--ts, 1)); }
+.day-t table { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--ts, 1)); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.day-t th, .day-t td { text-align: center; padding: 5px 6px; border-bottom: 1px solid var(--rule); } .day-t th { color: var(--ink-2); font-weight: 600; }
+/* no connection; the end-of-day report (who is not reported back), printed alone when asked */
+.off { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--outbg); color: var(--ink); font-weight: 600; font-size: calc(14px * var(--ts, 1)); } .off[hidden] { display: none; }
+.eodbtn { font: inherit; font-weight: 600; color: var(--accent); background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 9px 14px; margin: 0 0 12px; cursor: pointer; }
+.eodbtn[hidden] { display: none; }
+.eod { margin: 16px 0; background: var(--surface); border: 1.5px solid var(--red); border-radius: 12px; padding: 14px; } .eod[hidden] { display: none; }
+.eod h2 { margin: 0 0 4px; font-size: calc(18px * var(--ts, 1)); } .eod-s { margin: 0 0 10px; color: var(--ink-2); }
+.eod-b { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.eod-b button { font: inherit; font-weight: 600; border: 1px solid var(--ring); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.eodt { width: 100%; border-collapse: collapse; font-size: calc(14px * var(--ts, 1)); } .eodt th, .eodt td { text-align: center; padding: 6px 6px; border-bottom: 1px solid var(--rule); }
+.eodt th { color: var(--ink-2); font-size: calc(12.5px * var(--ts, 1)); } .eodt tr.late td { color: var(--red); font-weight: 600; }
+@media (max-width: 640px) {   /* phones: each runner one line that wraps - nothing wider than the screen */
+  .eodt thead { display: none; } .eodt, .eodt tbody { display: block; }
+  .eodt tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .eodt td { border: 0; padding: 0; text-align: start; } .eodt td:nth-child(2) { font-weight: 700; } .eodt td:empty { display: none; }
+  .eodt td[data-l]::before { content: attr(data-l) ": "; color: var(--muted); font-weight: 400; } }
+@media print { html.print-eod .wrap > *:not(main), html.print-eod main > *:not(#eod), html.print-eod .eod-b, html.print-eod body::before,
+  html.print-eod .notice, html.print-eod .a11y { display: none !important; } html.print-eod .eod { border: 0; padding: 0; } }
+/* the finish forecast, under the counts */
+.fc { margin: -2px 0 12px; font-size: calc(14px * var(--ts, 1)); color: var(--ink-2); } .fc[hidden] { display: none; } .fc b { color: var(--ink); font-size: calc(17px * var(--ts, 1)); }
+.fc span { white-space: nowrap; }     /* "9 ב-30 הדקות הקרובות" stays one piece */
+/* the clubs that have runners out: a tap shows only that club's runners */
+.clubs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 12px; font-size: calc(13px * var(--ts, 1)); }
+.clubs[hidden] { display: none; } .clubs .cl-t { color: var(--muted); flex-basis: 100%; }
+.clubs button { font: inherit; border: 1px solid var(--rule-2); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.clubs button i { font-style: normal; font-weight: 700; color: var(--red); }
+.clubs button[aria-pressed="true"] { background: var(--tab-on); border-color: var(--tab-on); color: var(--on-accent); } .clubs button[aria-pressed="true"] i { color: inherit; }
+.rows li.late .x b { color: var(--red); } .badge { display: inline-block; font-size: calc(11.5px * var(--ts, 1)); font-weight: 700; border-radius: 6px; padding: 1px 7px; margin-inline-start: 6px; }
+.badge.man { background: var(--chip); color: var(--ink-2); } .badge.late { background: var(--red); color: var(--paper); animation: latep 1.8s ease-out infinite; }
+@keyframes latep { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 55%, transparent); } to { box-shadow: 0 0 0 7px transparent; } }
+@media (prefers-reduced-motion: reduce) { .badge.late { animation: none; } }
+.rows li.late .x small, .rows li.out .x small, .rows li.late .m, .rows li.out .m { color: var(--ink-2); }
+.acts { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; } .acts button { padding: 6px 12px; font-size: calc(13.5px * var(--ts, 1)); }
+.acts .back { border-color: var(--green); color: var(--green); } .acts .dns { color: var(--ink-2); }
+details { margin: 14px 0 0; } summary { cursor: pointer; font-weight: 700; font-size: calc(16px * var(--ts, 1)); }
+.note { color: var(--muted); font-size: calc(13px * var(--ts, 1)); margin-top: 16px; } .warn { background: var(--surface); border-inline-start: 4px solid var(--red); padding: 10px 14px; border-radius: 6px; margin: 0 0 12px; }
+#admin { background: var(--surface); border: 1px solid var(--rule-2); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; }
+#admin label { display: block; font-weight: 600; font-size: calc(13.5px * var(--ts, 1)); margin: 6px 0 4px; } #admin input { font: inherit; width: 100%; padding: 9px 10px; border: 1px solid var(--rule-2); border-radius: 8px; background: var(--paper); color: var(--ink); }
+.msg { margin: 8px 0 0; font-weight: 600; } .msg.ok { color: var(--green); } .msg.err { color: var(--red); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* accessibility toolbar: text size (every font size is calc(px * --ts), see scalable()), contrast and reading aids */
+:root[data-text="l"] { --ts: 1.15; } :root[data-text="xl"] { --ts: 1.3; }
+.a11y { position: fixed; z-index: 45; width: 360px; max-width: calc(100vw - 16px); max-height: calc(100vh - 24px); overflow-y: auto; overscroll-behavior: contain;
+        background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+        padding: 12px 14px 14px; direction: rtl; text-align: right; font-size: calc(14px * var(--ts, 1)); }
+.a11yh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: calc(16px * var(--ts, 1)); }
+.a11yx { font: inherit; background: none; border: 0; color: var(--ink-2); cursor: pointer; padding: 4px 8px; }
+.a11yl { font-size: calc(12.5px * var(--ts, 1)); color: var(--muted); margin-bottom: 6px; }
+.a11ys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+.a11ys button { font-family: inherit; font-weight: 600; padding: 9px 4px; border: 1px solid var(--ring); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; line-height: 1.2; }
+.a11ys button[aria-checked="true"] { background: var(--tab-on); border-color: var(--tab-on); color: var(--on-accent, #fff); }
+.a11yg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+.a11yf { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: right; font: inherit; padding: 9px 10px; border: 1px solid var(--ring);
+         border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.a11yf b { font-size: calc(13.5px * var(--ts, 1)); } .a11yf small { font-size: calc(11.5px * var(--ts, 1)); color: var(--muted); line-height: 1.35; }
+.a11yf[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); box-shadow: inset 0 0 0 1px var(--accent); }
+.a11yf[aria-pressed="true"] b::before { content: "✓ "; color: var(--accent); }
+@media (pointer: coarse) { .a11yf.fine { display: none; } }
+.a11yreset { font: inherit; font-weight: 600; color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 8px; padding: 7px 12px; cursor: pointer; margin-bottom: 6px; }
+.a11ystmt { font-size: calc(13px * var(--ts, 1)); line-height: 1.6; color: var(--ink-2); border-top: 1px solid var(--grid); padding-top: 4px; }
+.a11ystmt summary { cursor: pointer; font-weight: 600; color: var(--accent); padding: 6px 0; }
+.a11ystmt p { margin: 6px 0; } .a11ystmt ul { margin: 4px 0; padding-inline-start: 18px; } .a11ystmt .upd { color: var(--muted); font-size: calc(12px * var(--ts, 1)); }
+@media (max-width: 640px) {
+  .a11y { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto; max-width: none; max-height: 86vh; border-radius: 16px 16px 0 0;
+          padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); } }
+/* the reading aids (classes on <html>) */
+:root.a-gray :is(.wrap > header, header.mast, #tabs, #pgtop, .ctxbar, main, footer, .bnav, .bar-top:not(.open)) { filter: grayscale(1); }
+:root.a-links a { background: #fff200 !important; color: #000 !important; text-decoration: underline !important; text-underline-offset: 3px; outline: 1px solid #000; border-radius: 2px; }
+:root.a-font, :root.a-font * { font-family: Arial, Helvetica, sans-serif !important; }
+:root.a-space :is(p, li, td, th, label, dd, dt, small, .desc, .note, .status, .lead) { line-height: 1.9 !important; letter-spacing: .05em !important; word-spacing: .15em !important; }
+:root.a-focus :focus { outline: 3px solid #ffbf00 !important; outline-offset: 2px !important; box-shadow: 0 0 0 6px #000 !important; }
+:root.a-motion *, :root.a-motion *::before, :root.a-motion *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+:root.a-cursor, :root.a-cursor * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpath d='M6 3v34l9-8.5 6.5 14 6.5-3-6.5-13.5H34z' fill='%23000' stroke='%23fff' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E") 6 3, auto !important; }
+/* the privacy notice: no cookies, only the preferences in this browser */
+.notice { position: fixed; z-index: 44; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 780px; margin: 0 auto;
+          background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.22);
+          padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; direction: rtl; text-align: right; font-size: calc(13.5px * var(--ts, 1)); }
+.notice p { margin: 0; flex: 1 1 300px; line-height: 1.5; }
+.notice .nb { display: flex; gap: 8px; flex-wrap: wrap; }
+.notice button { font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--accent); }
+.notice .ok { background: var(--tab-on); color: var(--on-accent, #fff); } .notice .del { background: var(--surface); color: var(--accent); }
+/* "skip to the content": the first stop of the keyboard */
+.skip { position: fixed; right: 10px; top: -80px; z-index: 60; background: var(--tab-on); color: var(--on-accent, #fff) !important; padding: 10px 16px; border-radius: 8px;
+        font-weight: 700; text-decoration: none; }
+.skip:focus { top: 10px; }
+/* tables: sort by a header click, ▾ opens sort + filter (as in Excel), a bar above the table resets it */
+th.tt { cursor: pointer; user-select: none; -webkit-user-select: none; }
+th.tt:hover { color: var(--ink); }
+th.tt-asc, th.tt-desc { color: var(--accent); }
+.ttb { font: calc(10px * var(--ts, 1))/1 system-ui, sans-serif; margin-inline-start: 4px; padding: 3px 4px; border: 1px solid var(--ring); border-radius: 4px;
+       background: var(--surface); color: var(--muted); cursor: pointer; vertical-align: middle; }
+.ttb:hover, th.tt-asc .ttb, th.tt-desc .ttb { color: var(--accent); border-color: var(--accent); }
+.ttb.on { background: var(--tab-on); border-color: var(--tab-on); color: var(--on-accent, #fff) !important; }
+tr.tt-hide { display: none; }
+/* the two buttons in the top corner of every page: accessibility, and light / dark (its name next to it where there is room) */
+.hicons { display: flex; gap: 6px; align-items: center; flex: none; }
+.hicons button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 38px; height: 38px; padding: 0 11px;
+  font: inherit; font-size: calc(13px * var(--ts, 1)); font-weight: 500; line-height: 1; color: var(--ink-2); background: var(--surface); border: 1px solid var(--ring);
+  border-radius: 8px; cursor: pointer; }
+.hicons button:hover { color: var(--accent); border-color: var(--accent); }
+.hicons svg { width: 18px; height: 18px; flex: none; }
+@media (max-width: 640px) { .hicons .hl { display: none; } .hicons button { width: 38px; padding: 0; } }
+@media print { .hicons { display: none !important; } }
+/* the bar at the top of a page: the way to the site's other pages (on the right), the corner buttons (on the left), the
+   outside links after them; a line under it keeps it apart from the page itself. The same on every page. */
+.sitebar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "nav more icons"; align-items: start; gap: 8px;
+  padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--grid); }
+.sitebar > nav.navlinks { grid-area: nav; } .sitebar > .navlinks.more { grid-area: more; } .sitebar > .hicons { grid-area: icons; }
+.navlinks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+.sitebar .navlinks a, .sitebar .navlinks button { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; font: inherit; font-size: calc(14px * var(--ts, 1));
+  font-weight: 600; color: var(--accent); background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; text-decoration: none;
+  white-space: nowrap; cursor: pointer; }
+.sitebar .navlinks a:hover, .sitebar .navlinks button:hover { border-color: var(--accent); }
+.sitebar .navlinks a.home { color: var(--on-accent, #fff); background: var(--tab-on, color-mix(in srgb, var(--accent) 88%, #000)); border-color: transparent; }
+.sitebar .navlinks a.home:hover { background: color-mix(in srgb, var(--accent) 76%, #000); }
+@media (max-width: 640px) {   /* phones: the site's pages and the corner buttons, then the outside links in a row of their own */
+  .sitebar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nav icons" "more more"; margin-bottom: 10px; padding-bottom: 10px; }
+  .navlinks { gap: 6px; } .sitebar .navlinks a, .sitebar .navlinks button { height: 36px; padding: 0 11px; font-size: calc(13px * var(--ts, 1)); } }
+/* the row number (מס״ד) each table starts with: narrow and quiet */
+th.ttn, td.ttn { width: 1%; white-space: nowrap; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+td.ttn { font-size: calc(12px * var(--ts, 1)); }
+.ttbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
+         font-size: calc(12px * var(--ts, 1)); color: var(--ink-2); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.ttbar[hidden] { display: none; }
+.ttbar button { font: inherit; font-weight: 600; color: var(--accent); background: var(--surface); border: 1px solid var(--accent);
+                border-radius: 6px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
+.ttbar button:hover { background: var(--tab-on); color: var(--on-accent, #fff); }
+.ttpop { position: fixed; z-index: 40; width: 270px; max-width: calc(100vw - 16px); background: var(--surface); color: var(--ink);
+         border: 1px solid var(--ring); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 10px; font-size: calc(13px * var(--ts, 1));
+         display: flex; flex-direction: column; gap: 6px; direction: rtl; text-align: right; }
+.ttpop .tthead small { display: block; color: var(--muted); font-size: calc(11px * var(--ts, 1)); font-weight: 400; }
+.ttpop .ttsort { font: inherit; text-align: right; background: none; border: 0; border-radius: 6px; padding: 7px 8px; color: var(--ink); cursor: pointer; }
+.ttpop .ttsort:hover, .ttpop .ttsort.on { background: var(--chip); }
+.ttpop .ttsort.on { font-weight: 600; color: var(--accent); }
+.ttpop .ttsep { border-top: 1px solid var(--grid); }
+.ttpop .ttq { font: inherit; padding: 7px 9px; border: 1px solid var(--ring); border-radius: 6px; background: var(--page); color: var(--ink); width: 100%; }
+.ttpop .ttall, .ttpop .ttfoot { display: flex; gap: 6px; }
+.ttpop .ttall button, .ttpop .ttfoot button { flex: 1; font: inherit; padding: 6px 8px; border: 1px solid var(--ring); border-radius: 6px;
+                                             background: var(--chip); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.ttpop .ttfoot .ttok { background: var(--tab-on); border-color: var(--tab-on); color: var(--on-accent, #fff); font-weight: 600; }
+.ttpop .ttfoot button:disabled { opacity: .45; cursor: default; }
+.ttpop .ttlist { max-height: 250px; overflow-y: auto; border: 1px solid var(--grid); border-radius: 6px; padding: 2px 8px; overscroll-behavior: contain; }
+.ttpop .ttlist label { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+.ttpop .ttlist label[hidden] { display: none; }
+.ttpop .ttlist span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ttpop .ttlist small { color: var(--muted); margin-inline-start: auto; font-variant-numeric: tabular-nums; }
+.ttpop input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; flex: none; margin: 0; }
+@media (pointer: coarse) { .ttb { font-size: calc(12px * var(--ts, 1)); padding: 6px 7px; } .ttpop .ttlist label { padding: 9px 0; } .ttpop .ttsort { padding: 10px 8px; }
+  .ttpop .ttall button, .ttpop .ttfoot button { padding: 10px 8px; } .ttbar button { padding: 8px 12px; } }
+@media (max-width: 640px) {   /* phones: a sheet at the bottom of the screen */
+  .ttpop { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto; max-width: none; max-height: 86vh;
+           border-radius: 14px 14px 0 0; padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); }
+  .ttpop .ttlist { max-height: 42vh; } }
+.cd-only, .cdtools { display: none; }
+.ttpop .ttcols { display: flex; flex-direction: column; max-height: 62vh; overflow-y: auto; overscroll-behavior: contain; }
+.ttpop .ttcol { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: inherit; font-size: calc(15px * var(--ts, 1)); text-align: right;
+                background: none; border: 0; border-top: 1px solid var(--grid); padding: 12px 4px; color: var(--ink); cursor: pointer; }
+.ttpop .ttcol small { flex: none; color: var(--muted); font-size: calc(12px * var(--ts, 1)); }
+.ttpop .ttcol small b { color: var(--accent); font-weight: 600; }
+/* phones: a table marked "cards" shows each row as a card - rank, name and the main value on top, the other
+   columns as labelled details below; one "sort and filter" button above it lists every column */
+@media (max-width: 640px) {
+  table.cards, table.cards tbody, table.cards tfoot { display: block; }
+  table.cards thead { display: none; }
+  .cdtools { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--grid); }
+  .cdtools button { font: inherit; font-size: calc(14px * var(--ts, 1)); font-weight: 600; color: var(--accent); background: var(--surface); border: 1px solid var(--accent);
+                    border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  .cdtools small { color: var(--muted); font-size: calc(12px * var(--ts, 1)); }
+  table.cards .cd-only { display: inline; }
+  table.cards tbody tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 14px; padding: 12px 2px; border-bottom: 1px solid var(--grid); }
+  table.cards tbody tr::before { content: ""; order: 5; flex-basis: 100%; height: 0; }   /* the line between the top and the details */
+  table.cards td { display: block; border: 0; padding: 0; order: 10; font-size: calc(13px * var(--ts, 1)); white-space: nowrap; position: static !important; background: none; text-align: start; }
+  table.cards td[data-l]:not(.cd-rank):not(.cd-name):not(.cd-main):not(.cd-star):not(.cd-full):not(.cd-leg)::before { content: attr(data-l) " "; color: var(--muted); font-size: calc(11px * var(--ts, 1)); }
+  table.cards td.cd-rank { order: 1; min-width: 22px; font-size: calc(17px * var(--ts, 1)); font-weight: 700; color: var(--ink); }
+  table.cards td.cd-name { order: 2; flex: 1 1 0; min-width: 0; font-size: calc(16px * var(--ts, 1)); font-weight: 600; white-space: normal; }
+  table.cards td.cd-main { order: 3; font-size: calc(16px * var(--ts, 1)); font-weight: 700; color: var(--ink); }
+  table.cards td.cd-star { order: 4; }
+  table.cards td.ttn { order: 4; width: auto; margin-inline-start: auto; font-size: calc(12px * var(--ts, 1)); color: var(--muted); }   /* the row number: "#12", at the end of the top line */
+  table.cards td.ttn::before { content: "#"; }
+  table.cards.keyfirst td.ttn { order: 0; margin-inline-start: 0; min-width: 26px; }
+  table.cards.keyfirst td.cd-main { order: 1; min-width: 66px; } table.cards.keyfirst td.cd-name { order: 2; }
+  table.cards td.cd-full { flex-basis: 100%; }
+  table.cards td.cd-hide, table.cards td:empty { display: none; }
+  table.cards .bar { min-width: 0; display: inline; } table.cards .bar i { display: none; } table.cards .bar b { font-weight: inherit; }
+  table.cards tr.tt-hide { display: none; }
+  table.cards tfoot tr { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 10px 2px; }
+  table.cards tfoot td { display: block; border: 0; padding: 0; }
+}
+
+</style>
+</head>
+<body>
+<a class="skip" href="#" data-skip="#main">דלג לתוכן</a>
+<div class="wrap">
+  <header class="sitebar"><nav class="navlinks" aria-label="דפים אחרים באתר"><a class="home" href="../../">← כל התחרויות</a><a href="../start/">⏱ זמני זינוק</a></nav><div class="hicons"><button id="a11yb" type="button" aria-label="סרגל נגישות"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.3" r="2.1" fill="currentColor"/><path d="M4.5 8.3c2.4.7 4.9 1.05 7.5 1.05s5.1-.35 7.5-1.05M12 9.4v5.2m0 0-3.3 6.4M12 14.6l3.3 6.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="hl">נגישות</span></button><button id="theme" type="button" aria-label="מצב תצוגה"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg><span class="hl" data-theml>אוטומטי</span></button></div>
+    <div class="navlinks more"><button type="button" id="adm">כניסת מנהלים</button></div></header>
+  <main id="main">
+    <p class="kicker">מעקב נווטים בשטח</p><h1 id="ttl"></h1><p class="sub" id="sub"></p>
+    <div id="admin" hidden>
+      <div id="aemail" hidden><label for="em">כתובת המייל שלך (מנהלים מאושרים)</label><input id="em" type="email" dir="ltr" autocomplete="email" maxlength="120">
+        <div style="margin-top:8px"><button type="button" class="pri" id="sendc">שליחת קוד</button></div>
+        <div id="codebox" hidden><label for="code">הקוד בן 8 הספרות שקיבלת במייל (מקלידים אותו רק כאן)</label><input id="code" dir="ltr" inputmode="numeric" autocomplete="one-time-code" maxlength="8">
+          <div style="margin-top:8px"><button type="button" class="pri" id="vcode">כניסה</button></div></div>
+        <p class="note" style="margin-top:8px"><a href="#" id="toKey">כניסה עם מפתח GitHub במקום</a></p></div>
+      <div id="alog"><label for="tok">מפתח הגישה ב-GitHub (מנהלים מאושרים)</label><input id="tok" type="password" dir="ltr" autocomplete="off">
+        <div style="margin-top:8px"><button type="button" class="pri" id="go">כניסה</button></div></div>
+      <div id="atools" hidden><b id="who"></b> <button type="button" id="aout">יציאה</button> · סימון ״חזר״ ליד כל נווט, או העלאת הייצוא העדכני ממולקה (.lxm או IOF XML):
+        <label for="mf">קובץ מ-Mulka</label><input id="mf" type="file" accept=".lxm,.xml">
+        <p class="msg ok" id="last" role="status" hidden></p></div>
+      <p class="msg" id="amsg" role="status"></p>
+    </div>
+    <p class="warn">מידע עזר בלבד. הרשימה הקובעת היא של המארגנים. נווט שלא חזר? פנו מיד למזכירות התחרות.</p>
+    <div class="sum" id="sum" aria-live="polite"></div>
+    <p class="fc" id="fc" aria-live="polite" hidden></p>
+    <p class="off" id="off" role="status" hidden></p>
+    <button type="button" class="eodbtn" id="eodbtn" hidden>📋 דוח סוף יום – מי לא דווח כחוזר</button>
+    <input id="q" type="search" placeholder="חיפוש נווט, קטגוריה או מועדון…" aria-label="חיפוש" autocomplete="off">
+    <div class="clubs" id="clubs" role="group" aria-label="מועדונים עם נווטים בשטח" hidden></div>
+    <div id="list"></div>
+    <section class="eod" id="eod" aria-labelledby="eod-h" hidden>
+      <h2 id="eod-h">דוח סוף יום</h2><p class="eod-s" id="eod-s"></p>
+      <div class="eod-b"><button type="button" id="eodcopy">📋 העתקה לשליחה</button><button type="button" id="eodprint">🖨️ הדפסה</button><button type="button" id="eodclose">סגירה</button></div>
+      <div id="eod-t"></div>
+    </section>
+    <section class="day" id="day" aria-labelledby="day-h" hidden>
+      <h2 id="day-h">כמה נווטים בשטח לאורך היום</h2>
+      <p class="day-s" id="day-s"></p>
+      <div class="day-p" id="day-p"></div>
+      <p class="day-n">כל הנווטים, לפי זמני הזינוק, הייצוא ממולקה והסימונים בסיום. מי שעוד לא דווח כחוזר נספר כבשטח. מעבר עם העכבר או נגיעה בגרף מציגים את המספר בכל רגע.</p>
+      <details class="day-t" id="day-tw"><summary>הנתונים לפי שעה</summary><div id="day-t"></div></details>
+    </section>
+    <p class="note" id="src"></p>
+  </main>
+</div>
+<script>
+const D = {"slug":"hacarmel-3-14-11-2026","title":"שער הכרמל- ליגת יער- מחזור 1 · 14.11.2026","date":"2026-11-14","repo":"NivutIsrael/nivutisrael.github.io","gateway":"https://script.google.com/macros/s/AKfycbyNFxH0etZDR3MAPqQedC1EFQvNP_CwiNAl0qut1hPOgufTvxUFMHSNvHDdbjqqo-skoA/exec","rows":[[32400,"מיש נעמי","D14A","תל אביב",""],[32400,"גרינברג דפי","D21B","גליל",""],[32400,"לב-אל ניבה","D45","תל אביב",""],[32400,"ברונשטיין אלון","H16A","מנשה",""],[32400,"כהנא אלון","H21A","השרון",""],[32400,"גנוסר יובל","H21B","חבל מודיעין",""],[32400,"עמר איציק","H60A","יזרעאל",""],[32400,"ארד ארז","H65","יזרעאל",""],[32400,"דביר יונתן","H80","ראשון לציון",""],[32460,"רן רות","D60","גליל",""],[32460,"גוטמן אילנה","D70","חבל מודיעין",""],[32460,"שלאל בן","H21C","אסא טכניון חיפה",""],[32460,"טייטר ארתור","H50A","תל אביב",""],[32460,"גוטמן יהודה","H70","חבל מודיעין",""],[32520,"גרדי עינת","D16A","עמק חפר",""],[32520,"משולם אופיר","D18A","תל אביב",""],[32520,"שמואלי נורית","D65","יזרעאל",""],[32520,"ברונשטיין אופיר","H14A","מנשה",""],[32520,"שפירא נעם","H21B","חבל מודיעין",""],[32520,"נחושתן ירון","H60A","חבל מודיעין",""],[32520,"ענבר אברהם","H65","גליל",""],[32520,"אביטל עפר","H75","גליל",""],[32580,"שרון דניאל","H35A","ראשון לציון",""],[32580,"גרדי עומר","H45","עמק חפר",""],[32580,"פלוט אשר","H70","גליל",""],[32640,"רום פז","D14A","מנשה",""],[32640,"עבודי נועה","D21B","גליל",""],[32640,"רוטשטיין חגית","D55","תל אביב",""],[32640,"פינצ׳וק אלון","H16A","יזרעאל",""],[32640,"מלץ אבי","H40","השרון",""],[32640,"חלבה אמיר","H50A","תל אביב",""],[32640,"זיינפלד עופר","H60B","חבל מודיעין",""],[32640,"מינסקי מנחם","H85","השרון",""],[32700,"הלחמי קרן","D45","חבל מודיעין",""],[32700,"לפושנר לובוב","D75","גליל",""],[32700,"כהנא איתן","H60A","השרון",""],[32760,"מילר לינה","D50","תל אביב",""],[32760,"ברטרנד ארז","H21A","גליל",""],[32760,"קרן שקד","H21B","יזרעאל",""],[32760,"עפרון אלדד","H21C","מנשה",""],[32760,"וולשטיין דן","H60A","מנשה",""],[32760,"רן שמאי","H70","גליל",""],[32760,"דודלזק צביקה","H80","מנשה",""],[32820,"פינצ'וק אירינה","D35","יזרעאל",""],[32820,"גרדי הדס","D45","עמק חפר",""],[32820,"סלפק אלון","H55","חבל מודיעין",""],[32820,"צפורי אבנר","H60B","מנשה",""],[32820,"פרידמן אלכס","H85","תל אביב",""],[32880,"שחף יסמין","D40","מנשה",""],[32880,"טייט אבה","D70","חבל מודיעין",""],[32880,"ארצי ירון","H40","יזרעאל",""],[32880,"אס אורי","H45","טכניון כרמל",""],[32880,"איטח שלומי","H50A","מנשה",""],[32880,"בלגלי רן","H65","השרון",""],[32940,"רגב יערה","D21C","חבל מודיעין",""],[32940,"קרניאל יונתן","H21C","אסא טכניון חיפה",""],[32940,"הרשמן שחר","H35A","טכניון כרמל",""],[32940,"יעקבי אלישע","H60A","השרון",""],[32940,"הס רענן","H70","None",""],[32940,"שפי שאול","H80","השרון",""],[33000,"טייטר יאנה","D21B","תל אביב",""],[33000,"פרגר בן נון אלה","D50","יזרעאל",""],[33000,"קורוטייב מיכאיל","H40","תל אביב",""],[33000,"פרוינד אור","H50B","טכניון כרמל",""],[33000,"זיו צפיר","H55","מנשה",""],[33060,"איגנטוב אנה","D55","חבל מודיעין",""],[33060,"זכות ויטו","H16A","מנשה",""],[33060,"שגב גילעד","H21C","אסא טכניון חיפה",""],[33060,"פרץ עידן","H50A","מנשה",""],[33060,"רבד איתי","H60B","תל אביב",""],[33120,"בר לריסה","D55","השרון",""],[33120,"זורע טל","H21A","תל אביב",""],[33120,"פרידמן אולג","H45","תל אביב",""],[33120,"גרינברג מיקי","H50B","גליל",""],[33120,"צפורי דרור","H60A","מנשה",""],[33180,"חלבה הדר","D16A","תל אביב",""],[33180,"גפן אביגיל","D16B","טכניון כרמל",""],[33180,"איגנטוב אידה","D21B","חבל מודיעין",""],[33180,"ארידור ליהי","D21C","אסא ירושלים",""],[33180,"סט כרמל","H21B","יזרעאל",""],[33180,"ארז נחשון","H55","ראשון לציון",""],[33180,"בוכבינדר מודי","H65","השרון",""],[33240,"שחף אסף","H35B","מנשה",""],[33240,"בן שטרית מאיר","H70","יזרעאל",""],[33300,"דגן אוריין","D55","מנשה",""],[33300,"חלבה אורן","H14A","תל אביב",""],[33300,"שרון נבו חיים","H16A","טכניון כרמל",""],[33300,"יעקבי ארם","H35A","השרון",""],[33300,"רק גיא","H40","תל אביב",""],[33300,"מן דן","H45","מנשה",""],[33300,"חזן גדעון","H60A","יזרעאל",""],[33300,"כפרי גדעון","H65","ראשון לציון",""],[33300,"ברג דוד","H80","טכניון כרמל",""],[33360,"פרי גל","D40","גליל",""],[33360,"יפה מור","H55","השרון",""],[33420,"שחר-נוימן ענת","D55","מנשה",""],[33420,"זכות דרור","H16A","מנשה",""],[33420,"לנס עידן","H21B","יזרעאל",""],[33420,"תמרי רועי","H21C","חבל מודיעין",""],[33420,"ליאור איל","H50B","חבל מודיעין",""],[33420,"אבנר עוזי","H60A","גליל",""],[33480,"קופרברג אילנה","D60","גליל",""],[33480,"חדד-דגן דר","H21A","מנשה",""],[33480,"הלחמי ליאור","H45","חבל מודיעין",""],[33480,"עפרון איתן","H55","מנשה",""],[33480,"פלוטקין רון","H65","תל אביב",""],[33540,"פדוסין מריקה","D18A","תל אביב",""],[33540,"חלבה תמר","D21A","תל אביב",""],[33540,"הימן יונה","D65","השרון",""],[33540,"מיש שי","H50A","תל אביב",""],[33540,"אילן יעקב","H70","יזרעאל",""],[33600,"גור אריה חן","D21C","אסא טכניון חיפה",""],[33600,"ליזוגוב ויאצ'סלב","H35B","עמק חפר",""],[33600,"גנדלמן אייל","H50A","השרון",""],[33600,"הראל דרור","H50B","חבל מודיעין",""],[33660,"גוטמן עדי","D21B","חבל מודיעין",""],[33660,"שפר שחר","H21B","תל אביב",""],[33660,"פדוסין אנטון","H35A","תל אביב",""],[33660,"נהרי צחר","H50B","מנשה",""],[33660,"גרנט עופר","H55","מנשה",""],[33720,"עפרון מתן","H21C","None",""],[33720,"רגבי אורן","H50A","השרון",""],[33720,"שקד יוסי","H65","גליל",""],[33780,"ריף הגר","D21C","אסא ירושלים",""],[33780,"ברנס עינב","H40","חבל מודיעין",""],[33780,"גפן גוש","H45","טכניון כרמל",""],[33780,"שור מוטי","H60A","מנשה",""],[33780,"שמואלי אשר","H70","יזרעאל",""],[33840,"נתיב רות","D65","חבל מודיעין",""],[33840,"פרי גיא","H12","מנשה",""],[33840,"זליגמן הלל","H21A","טכניון כרמל",""],[33840,"דקל שגיא","H21C","אסא טכניון חיפה",""],[33840,"סלומון שלומי","H55","גליל",""],[33840,"אש נחמן","H65","השרון",""],[33900,"רימרמן-שדמה נטע","D50","עמק חפר",""],[33900,"קוגן מתן","H16A","גליל",""],[33900,"שמואלי חן","H21B","יזרעאל",""],[33900,"שטיין יואב","H45","ראשון לציון",""],[33900,"סער יצחק","H60B","חבל מודיעין",""],[33960,"טל-מסינג טיאן","D21B","תל אביב",""],[33960,"ליפמן יעל","D60","השרון",""],[33960,"צ'יזיק מתן","H14B","גליל",""],[33960,"טישלר יצחקי","H50B","גליל",""],[33960,"בר-גד יזהר","H55","תל אביב",""],[34020,"ביס רועי","H14A","מנשה",""],[34020,"גזברי איתמר","H16A","מנשה",""],[34020,"ליפוביץ אלכס","H40","עמק חפר",""],[34020,"איגנטוב אנדרי","H55","חבל מודיעין",""],[34080,"Olbinska Shezhana","D12","מנשה",""],[34080,"בושקוב נטליה","D35","גליל",""],[34080,"רגב יעל","D65","חבל מודיעין",""],[34080,"לוינסון יהונתן","H21A","אסא טכניון חיפה",""],[34080,"נסראלדין נגיב","H60A","טכניון כרמל",""],[34080,"וידר יואב","H70","טכניון כרמל",""],[34140,"יסעור ענבר","D55","יזרעאל",""],[34140,"דה-קוסטה רוני","D80","יזרעאל",""],[34140,"יצחקי עמית","H21B","חבל מודיעין",""],[34140,"קלקשטיין נדב","H21C","השרון",""],[34140,"ארד שחר-3446","H55","ראשון לציון",""],[34140,"ברקאי עזרא","H65","מנשה",""],[34200,"מייר רותם","D14A","תל אביב",""],[34200,"זריהן בר","D35","גליל",""],[34200,"ויסמן עדי","D50","חבל מודיעין",""],[34200,"רביד דליה","D70","תל אביב",""],[34200,"סגל עופר","H12","תל אביב",""],[34200,"קרמר איתן","H16A","גליל",""],[34200,"גילה זיו","H60A","יזרעאל",""],[34200,"חדד עמית","H60B","מנשה",""],[34260,"שביב עינב","D21B","חבל מודיעין",""],[34260,"ורולקר הראל","D21C","אסא טכניון חיפה",""],[34260,"גורליק נאדזדה","D75","גליל",""],[34260,"Olbinskiy Vitalik","H35A","מנשה",""],[34260,"קוזלוב אלכסנדר","H40","גליל",""],[34260,"טויג רון","H50B","חבל מודיעין",""],[34260,"אלעד חגי","H55","תל אביב",""],[34320,"יעקבי יערה","D14B","חבל מודיעין",""],[34320,"ברקוביץ מרב","D60","טכניון כרמל",""],[34320,"קרול דן","H14A","תל אביב",""],[34320,"פלדמן שגיב","H16A","יזרעאל",""],[34320,"יעקבי יוני","H45","חבל מודיעין",""],[34320,"לידור אורי","H50A","מנשה",""],[34320,"פדוסין ולדימיר","H70","תל אביב",""],[34380,"אילן גאיה","D35","יזרעאל",""],[34380,"סגל יעל","D45","תל אביב",""],[34380,"גורין דודי","H50B","טכניון כרמל",""],[34380,"כהן שלומי","H55","גליל",""],[34440,"זכות שירה","D40","מנשה",""],[34440,"קרול יואב","H12","תל אביב",""],[34440,"סולאג׳ תומא","H16A","גליל",""],[34440,"זורע אלון","H21A","אסא טכניון חיפה",""],[34440,"ענבר ליאור","H21B","גליל",""],[34440,"קינן איל","H45","גליל",""],[34440,"הולנדר גדעון","H60A","תל אביב",""],[34440,"פרנקו אהרון","H70","חבל מודיעין",""],[34500,"נוסבוים שרון","D55","השרון",""],[34500,"ווינטר לאון","H35B","תל אביב",""],[34500,"סלומון עודד","H50B","גליל",""],[34500,"יודפת עופר","H60A","חבל מודיעין",""],[34560,"גלוזשטיין לודמילה","D35","ראשון לציון",""],[34560,"שביב מיכל","D50","חבל מודיעין",""],[34560,"רז-רוטשילד דניאל","H21B","אסא ירושלים",""],[34560,"מנור משה","H70","חבל מודיעין",""],[34620,"יסעור גל","D40","יזרעאל",""],[34620,"גילה אייל","H21A","יזרעאל",""],[34620,"בושקוב מיכאל","H45","גליל",""],[34620,"פרצ'ונוק דמיטרי","H60A","תל אביב",""],[34620,"אוסטר שמואל","H65","גליל",""],[34680,"סולנה מעין","H16A","מנשה",""],[34680,"גריף דניאל","H40","השרון",""],[34680,"גול אפק","H60A","תל אביב",""],[34740,"ובמן איה","D21B","אסא ירושלים",""],[34740,"גור אלעזר","H55","מנשה",""],[34740,"פרישפלס ג'ים","H70","גליל",""],[34800,"קינן אורי","H16A","גליל",""],[34800,"כחל עמר","H21A","אסא טכניון חיפה",""],[34800,"וינשל יואב","H21B","תל אביב",""],[34800,"לוי שגיא","H45","טכניון כרמל",""],[34800,"קלקשטיין ניר","H50B","השרון",""],[34800,"יופה פבל","H60A","גליל",""],[34860,"חריש רוני","D35","גליל",""],[34860,"הימן רפי","H60A","השרון",""],[34860,"סבוראי עמי","H60B","מנשה",""],[34920,"אשד כרמל","H16A","טכניון כרמל",""],[34920,"בן-דור יואב","H35B","חבל מודיעין",""],[34920,"ברג יובל","H40","טכניון כרמל",""],[34920,"שפי יוחאי","H50B","תל אביב",""],[34920,"סמירנוב אלכסנדר","H55","גליל",""],[34980,"עופר איילה","D18A","מנשה",""],[34980,"קלקשטיין יובל","H21A","השרון",""],[34980,"כצמן אדי","H55","מנשה",""],[34980,"רז שלמה","H70","ראשון לציון",""],[35040,"אבידן הילה","D14A","מנשה",""],[35040,"הירש-יוגב מיקה","D50","עמק חפר",""],[35040,"יוגב עדי","H16A","מנשה",""],[35040,"הולנדר חן","H21B","תל אביב",""],[35040,"כהן תומר","H45","טכניון כרמל",""],[35040,"יוגב כרמל","H50B","מנשה",""],[35040,"נוסבוים יצחק","H60A","השרון",""],[35100,"ורבין אסיה","D45","תל אביב",""],[35100,"נטיף צפי","D70","חבל מודיעין",""],[35100,"גריידי מלאכי","H21C","אסא טכניון חיפה",""],[35100,"ריינהרץ יניב","H55","גליל",""],[35100,"קינר דורון","H70","תל אביב",""],[35160,"מייר-גור תמר","D50","מנשה",""],[35160,"משלי ליסה","D70","חבל מודיעין",""],[35160,"רביד איל","H18B","תל אביב",""],[35160,"יסעור ניצן","H21A","יזרעאל",""],[35160,"צ'יזיק דן","H40","גליל",""],[35160,"כהן נמרוד","H45","תל אביב",""],[35160,"שמע נתי","H60A","חבל מודיעין",""],[35160,"סלומון רונן","H60B","ראשון לציון",""],[35220,"טויג ענבל","D18A","חבל מודיעין",""],[35220,"רביד נעמי","D45","תל אביב",""],[35220,"ליפמן רמי","H70","השרון",""],[35280,"אליאס מעין","D21B","תל אביב",""],[35280,"סולנה אימרי","H16A","מנשה",""],[35280,"אלקחר בר","H21B","יזרעאל",""],[35280,"לויצקי פבל","H55","תל אביב",""],[35280,"ברקוביץ עמירן","H65","טכניון כרמל",""],[35340,"קוזנצוב דמיטרי","H35A","תל אביב",""],[35340,"נוימן זיו","H60A","אסא טכניון חיפה",""],[35400,"מרשנסקי יהב","H16A","גליל",""],[35400,"רביד יואב","H21B","תל אביב",""],[35400,"אברהם דקל","H21C","אסא טכניון חיפה",""],[35400,"שקדי חן","H50B","תל אביב",""],[35400,"צוק אילן","H55","יזרעאל",""],[35460,"לזרי עובדיה","H35B","עמק חפר",""],[35460,"גלוזשטיין ולרי","H50A","ראשון לציון",""],[35460,"משלי יובל","H70","חבל מודיעין",""],[35520,"סבוראי עופר","D18A","מנשה",""],[35520,"יקיר ניב","H21A","טכניון כרמל",""],[35520,"לדרר חגי","H40","מנשה",""],[35520,"סט שי","H60A","יזרעאל",""],[35580,"קרול ליאור","H35B","תל אביב",""],[35580,"שביב רן","H55","חבל מודיעין",""],[35640,"לוי אריאל","H14A","חבל מודיעין",""],[35640,"אברהם רגב","H21C","אסא טכניון חיפה",""],[35640,"ויינר תומר","H50A","יזרעאל",""],[35700,"רביד יעל","D21A","תל אביב",""],[35700,"רביד נועם","H35A","תל אביב",""],[35700,"מה-טוב יואב","H35B","אסא ירושלים",""],[35700,"ויינר עמית","H60A","חבל מודיעין",""],[35760,"שקדי נור","D18A","תל אביב",""],[35760,"שי תומר","H14A","מנשה",""],[35760,"רינת גיל","H55","גליל",""],[35820,"מאירקוביץ סופיה","D65","טכניון כרמל",""],[35820,"גור אופיר","H21B","מנשה",""],[35820,"ארז מורן","H21C","אסא טכניון חיפה",""],[35820,"רגב שמואל","H60A","חבל מודיעין",""],[35880,"גרינברג אניה","D35","תל אביב",""],[35880,"חורושילוב לריסה","D50","תל אביב",""],[35880,"שדמה ברק","H14A","עמק חפר",""],[35880,"דנציג נבו","H14B","יזרעאל",""],[35940,"לוי יוליה","D40","חבל מודיעין",""],[35940,"שכטר דביר","H21A","חבל מודיעין",""],[35940,"שמואלי מופז","H21B","יזרעאל",""],[35940,"גרסטמן מתן","H21C","אסא טכניון חיפה",""],[35940,"טל אביב","H55","תל אביב",""],[35940,"הלחמי אבנר","H70","חבל מודיעין",""],[36000,"קלמנוביץ מי-טל","D45","תל אביב",""],[36000,"שי נדב","H12","מנשה",""],[36000,"ניב אלון","H14A","מנשה",""],[36000,"יבסייב אריה","H60A","יזרעאל",""],[36000,"סטפנוב ולרי","H65","מנשה",""],[36060,"חצב אלה","D18A","תל אביב",""],[36060,"לוי עדי","D50","חבל מודיעין",""],[36060,"לדרר שלו","H18A","מנשה",""],[36060,"שחר ליעד","H50A","מנשה",""],[36120,"זביילובה יוליה","D55","טכניון כרמל",""],[36120,"לוי שגיא","H14A","חבל מודיעין",""],[36120,"אבנר אסף","H21A","גליל",""],[36120,"עמירן איתן","H21C","אסא טכניון חיפה",""],[36120,"ויסמן שאול","H60A","חבל מודיעין",""],[36180,"שדמה ירדן","D18A","עמק חפר",""],[36180,"קלניצקי אלכס","H40","תל אביב",""],[36180,"מינצר צפריר","H60A","יזרעאל",""],[36240,"מן אופיר","H14A","מנשה",""],[36240,"רהב אמיר","H21C","אסא טכניון חיפה",""],[36240,"גרינברג גיל","H55","תל אביב",""],[36300,"יוגב מתן","H21A","אסא טכניון חיפה",""],[36300,"לנס רותם","H21B","יזרעאל",""],[36300,"עמיעז איתן","H60A","חבל מודיעין",""],[36360,"גלזר אילן","H60A","תל אביב",""],[36420,"בולוטני מיכאל","H40","גליל",""],[36420,"סרגה אלי","H55","חבל מודיעין",""],[36480,"שוב רונן","H21A","טכניון כרמל",""],[36480,"סגל דוידי","H60A","מנשה",""],[36540,"קלקשטיין בר","D21A","השרון",""],[36600,"מלמד דרור","H60A","יזרעאל",""],[36660,"מצפון פלג","H21A","מנשה",""],[36660,"רובין רז","H21B","אסא טכניון חיפה",""],[36660,"אבידן אליק","H50A","מנשה",""],[36720,"רינת שרון","H60A","יזרעאל",""],[36780,"סט עומר","D21A","יזרעאל",""],[36780,"זידנוב דניס","H50A","השרון",""],[36840,"שרון אלמוג","H21A","טכניון כרמל",""],[36840,"שכטר גיל","H60A","חבל מודיעין",""],[36840,"נירן חן","H65","ראשון לציון",""],[36900,"אילגץ' אלינה","D12","תל אביב",""],[36900,"טרופימצ׳יק מרינה","D45","תל אביב",""],[36900,"יוגב סיון","H50A","עמק חפר",""],[36900,"יוחנן גיא","H50B","יזרעאל",""],[36900,"קורנברג ישראל","H75","ראשון לציון",""],[36960,"שצרבנין טטיאנה","D50","גליל",""],[36960,"סגל זף","H40","תל אביב",""],[36960,"לוי יוסי","H65","חבל מודיעין",""],[37020,"יסעור ניר","H35A","יזרעאל",""],[37080,"שורץ בן","H18A","מנשה",""],[37200,"סגל ערן","H21A","מנשה",""],[37200,"ויינר יגאל","H21B","יזרעאל",""],[37320,"מצפון גאיה","D21A","מנשה",""],[37380,"גוסב איליה","H35A","תל אביב",""],[37440,"מאירקוביץ יבגני","H21B","טכניון כרמל",""],[37560,"שגיא עמית","H18A","תל אביב",""],[37560,"יוגב רותם","H21A","מנשה",""],[37620,"פרוינד תם","H12","טכניון כרמל",""],[37680,"שרון יותם","H21B","מנשה",""],[37740,"גפן יפתח","H12","טכניון כרמל",""],[37740,"ורבין עמית","H16A","תל אביב",""],[37800,"יעקבי עופרי","D21A","חבל מודיעין",""],[37800,"יופה קטרינה","D35","גליל",""],[37800,"קוצר אנדרה","D80","מנשה",""],[37800,"מנור איתי","H21A","חבל מודיעין",""],[37800,"ורבין עודד","H50A","תל אביב",""],[37800,"פישמן סרחיו","H60B","טכניון כרמל",""],[37860,"ברג רועי","H12","טכניון כרמל",""],[37860,"ורבין עידן","H16A","תל אביב",""],[37920,"דה-קוסטה אריאל","H18A","יזרעאל",""],[37980,"סולאג' כליל","H21A","גליל",""],[38040,"בנימיני יותם","H21B","אסא טכניון חיפה",""],[38220,"איגנטייב טימופיי","H18A","תל אביב",""],[38340,"דנציג אלמוג","H40","יזרעאל",""],[38460,"קומץ׳ יורי","H18A","תל אביב",""],[38520,"אילגץ׳ גאורגי","H35A","תל אביב",""],[38580,"בהט עידו","H21B","יזרעאל",""],[38640,"סובל דניאל","H14A","יזרעאל",""],[38640,"סובל תום","H16A","יזרעאל",""],[38700,"גרדי דן","H18A","עמק חפר",""],[38700,"סובל עופר","H35A","יזרעאל",""],[38700,"שחורי איתי","H60A","חבל מודיעין",""],[38820,"פנייקוב בני","H21B","יזרעאל",""],[38940,"ברקן אורי","H21B","יזרעאל",""],[39060,"פולויאן זכר","H18A","עמק חפר",""],[39180,"ריינליב דינסטי","H21B","מנשה",""],[39300,"פרוינד אופק","H18A","טכניון כרמל",""],[39540,"יזרעאלי טלאל","D21A","יזרעאל",""],[39540,"חורב רני","H12","תל אביב",""],[39600,"גיל עלמה","D16B","טכניון כרמל",""],[39660,"צירפאנוב דריה","D21A","None",""]]};
+const FRAMED = window.top !== window.self;     // shown inside another site: the list only, no admin part
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const norm = s => String(s ?? "").replace(/['\"\u05f3\u05f4\u2018\u2019\u201c\u201d`\u00b4]/g, "").normalize("NFKC").replace(/[\p{Cf}\u0591-\u05bd\u05bf-\u05c7]/gu, "")
+  .replace(/[\-\u05be\u2010-\u2015\u2212]/g, " ").replace(/['\"\u05f3\u05f4\u2018\u2019\u201c\u201d`\u00b4]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const squash = s => String(s || "").replace(/\s+/g, " ").trim();
+const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/.test(D.slug || "") ? D.slug : "", REPO = /^[\w.-]+\/[\w.-]+$/.test(D.repo || "") ? D.repo : "";
+const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const secs = v => { const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(squash(v)); return m ? +m[1] * 3600 + +m[2] * 60 + +(m[3] || 0) : null; };
+const hms = t => `${Math.floor(t / 3600)}:${String(Math.floor(t % 3600 / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+const hm = t => `${Math.floor(t / 3600)}:${String(Math.floor(t % 3600 / 60)).padStart(2, "0")}`;
+const away = t => t < 6000 ? `${Math.floor(t / 60)} ד׳` : `${hm(t)} ש׳`;      // time on the course: minutes, or hours:minutes
+const START = (Array.isArray(D.rows) ? D.rows : []).filter(r => Array.isArray(r) && (Number.isFinite(r[0]) || r[0] === null) && typeof r[1] === "string")
+  .map(r => ({ plan: r[0], n: r[1], k: String(r[2] || ""), club: String(r[3] || ""), c: String(r[4] || "").replace(/_/g, " ") }));
+// a runner is known by name; two of one name, by name and category
+const dupes = new Set(START.map(r => norm(r.n)).filter((n, i, a) => a.indexOf(n) !== i));
+const keyOf = (n, k) => dupes.has(norm(n)) && k ? `${norm(n)}#${norm(k)}` : norm(n);
+// ---- the competition's clock: Israel time, whatever time zone the phone is set to
+let ILF = null;
+try { ILF = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jerusalem", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23" }); } catch (e) {}
+const il = d => { if (!ILF) return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds() };
+  const o = {}; for (const p of ILF.formatToParts(d)) if (p.type !== "literal") o[p.type] = +p.value; o.hour %= 24; return o; };
+const clock = d => { const p = il(d); return `${p.hour}:${String(p.minute).padStart(2, "0")}`; };
+// ---- the day: before it nobody is out, after it the clock stops
+const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(D.date || "");
+const dayRel = () => { if (!ymd) return 0; const n = il(new Date()), a = [n.year, n.month, n.day], b = [+ymd[1], +ymd[2], +ymd[3]];
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1; return 0; };
+const nowS = () => { const p = il(new Date()); return p.hour * 3600 + p.minute * 60 + p.second; };
+// ---- the tracking data, as on the site: the public copy every 30 s, or (signed in) the file itself every minute.
+// n counts the saves: a copy with a lower n than the one this page has is older (GitHub Pages' cache can be 10 minutes
+// behind a save made here) and is not taken.
+let T = { n: 0, mulka: null, manual: {} }, SITE_T = { n: 0, mulka: null, manual: {} };      // shown; the site's copy as last read
+let DATA_AT = null, CACHED = false, FAILED = false;     // when the copy shown was read; it came from the phone's copy; the last read failed
+const copyT = t => JSON.parse(JSON.stringify(t));
+const STATES = new Set(["ok", "mp", "dnf", "dns", "out", "none"]), MANUAL = new Set(["back", "dns", "out"]);
+function clean(e) {
+  const out = { n: 0, mulka: null, manual: {} };
+  if (e && typeof e === "object") {
+    if (Number.isInteger(e.n) && e.n > 0 && e.n < 1e9) out.n = e.n;
+    const m = e.mulka;
+    if (m && typeof m === "object" && m.runners && typeof m.runners === "object") {
+      out.mulka = { at: ISO.test(m.at || "") ? m.at : "", by: String(m.by || "").slice(0, 40), file: String(m.file || "").slice(0, 120), runners: {} };
+      for (const [k, r] of Object.entries(m.runners)) if (r && typeof r === "object" && STATES.has(r.s) && typeof r.n === "string")
+        out.mulka.runners[k] = { n: r.n, k: String(r.k || ""), s: r.s, t: Number.isFinite(r.t) ? r.t : null, st: Number.isFinite(r.st) ? r.st : null };
+    }
+    if (e.manual && typeof e.manual === "object")
+      for (const [k, x] of Object.entries(e.manual)) if (x && typeof x === "object" && MANUAL.has(x.s)) out.manual[k] = { s: x.s, at: ISO.test(x.at || "") ? x.at : "", by: String(x.by || "").slice(0, 40) };
+  }
+  return out;
+}
+function take(j, at, cached) {        // a tracking file read: shown, unless it is older than the copy this page has
+  if (!j || !j.comps || typeof j.comps !== "object" || Array.isArray(j.comps)) return false;
+  const e = clean(Object.hasOwn(j.comps, SLUG) ? j.comps[SLUG] : null);
+  DATA_AT = at; CACHED = cached; FAILED = false;
+  if (e.n < SITE_T.n) { tick(); return false; }
+  SITE_T = e; T = overlay(copyT(SITE_T)); tick(); return true;
+}
+let SIGNED_READ = -1e9;
+function load() {
+  if (!/^https?:$/.test(location.protocol) || !SLUG) return;
+  if (ME) {                 // signed in: the file itself (not the public copy, minutes behind), once a minute
+    if (mono() - SIGNED_READ < 55000) return;
+    SIGNED_READ = mono();
+    return getTrack().then(f => { const j = f.content ? JSON.parse(b64dec(f.content)) : { v: 1, comps: {} }; take(j, new Date(), false); keepCopy(j); })
+      .catch(e => {
+        if (e.status === 401) {          // the sign-in ended (12 hours, or signed out elsewhere): said so, and the public copy from now on
+          signedOut((MODE === "gw" ? "פג תוקף הכניסה – היכנסו שוב. " : "המפתח לא תקין או שפג תוקפו – היכנסו שוב. ")
+            + (PENDING.size || PENDING_MULKA ? (KEPT ? "מה שלא נשמר שמור בדפדפן הזה ויישמר אחרי הכניסה." : here()) : ""));
+        } else console.warn("[track] the tracking file not read through the sign-in:", e);
+        publicRead();
+      });
+  }
+  publicRead();
+}
+function publicRead() {
+  fetch(`../../track.json?t=${Math.floor(Date.now() / 15000)}`, { cache: "no-store" }).then(r => {
+    if (!r.ok) throw new Error(String(r.status));
+    const kept = r.headers.get("x-lc-at");           // the phone's copy (no connection): when it was kept
+    return r.json().then(j => take(j, kept && !isNaN(new Date(kept)) ? new Date(kept) : new Date(), !!kept));
+  }).catch(e => { FAILED = true; console.warn("[track] track.json not read:", e); tick(); });
+}
+// the phone's own copy of the tracking file (for a reload without a connection): also what a signed-in read or a save
+// brought - the worker keeps only what the page fetched from the site itself
+function keepCopy(j) {
+  if (!("caches" in window) || !window.isSecureContext || !/^https?:$/.test(location.protocol)) return;
+  const u = new URL("../../track.json", location.href).href;
+  caches.open("track-v2").then(c => c.put(u, new Response(JSON.stringify(j), { headers: { "content-type": "application/json", "x-lc-at": new Date().toISOString() } })))
+    .catch(e => console.warn("[sw] the tracking file not kept:", e));
+}
+// ---- who is where
+function people() {
+  const by = new Map();
+  START.forEach(r => by.set(keyOf(r.n, r.k), { ...r }));
+  for (const [k, m] of Object.entries(T.mulka?.runners || {})) {
+    const key = by.has(k) ? k : by.has(norm(m.n)) ? norm(m.n) : k;
+    by.set(key, { ...(by.get(key) || { n: m.n, k: m.k, club: "", c: "", plan: null }), m });
+  }
+  for (const [k, x] of Object.entries(T.manual || {})) if (by.has(k)) by.get(k).man = x;
+  return [...by.entries()].map(([key, p]) => ({ key, ...p }));
+}
+const BACK = new Set(["ok", "mp", "dnf"]);
+function stateOf(p, rel, now) {
+  if (p.man?.s === "back" || BACK.has(p.m?.s)) return "back";         // back: tapped at the finish, or downloaded in Mulka
+  if (p.man?.s === "dns" || p.m?.s === "dns") return "dns";
+  if (rel < 0) return "wait";                                           // before the competition day nobody is out
+  if (p.man?.s === "out" || p.m?.s === "out") return "out";
+  if (rel > 0) return "out";                                            // after the day: never reported back
+  const st = p.m?.st ?? p.plan;                                         // the day itself: started = start time passed
+  return st != null && st <= now ? "out" : "wait";
+}
+// out too long: longer than the slowest finisher of the class so far, and than twice the fastest; nobody back yet: 2 hours
+function limits(list) {
+  const t = {};
+  list.forEach(p => { if (p.m?.s === "ok" && p.m.t > 0) (t[norm(p.m.k)] ||= []).push(p.m.t); });
+  const lim = {};
+  for (const [k, v] of Object.entries(t)) lim[k] = Math.max(Math.max(...v), 2 * Math.min(...v));
+  return lim;
+}
+// the usual time today on a course (else on a class): the median of those the Mulka export has as finished, once there are 3
+function typical(list) {
+  const t = {}, add = (g, v) => (t[g] ||= []).push(v);
+  list.forEach(p => { if (p.m?.s === "ok" && p.m.t > 0) { if (p.c) add("c:" + norm(p.c), p.m.t); add("k:" + norm(p.m.k || p.k), p.m.t); } });
+  const med = {};
+  for (const [g, v] of Object.entries(t)) if (v.length >= 3) { v.sort((a, b) => a - b); const h = v.length >> 1; med[g] = v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2; }
+  return med;
+}
+let ME = "", TOKEN = "", CLUB = "";          // CLUB: only this club's runners are shown (a tap on the club)
+function row(p, st, now, lim, med = {}) {
+  const start = p.m?.st ?? p.plan, out = start != null ? Math.max(0, now - start) : null;
+  const L = (p.m && lim[norm(p.m.k)]) || lim[norm(p.c)] || lim[norm(p.k)] || 7200, late = st === "out" && dayRel() === 0 && out != null && out > L;
+  const meta = [p.k, p.c, p.club].filter(Boolean).map(esc).join(" · ");
+  // when to expect them: their start and the usual time on their course today
+  const typ = (p.c && med["c:" + norm(p.c)]) || med["k:" + norm(p.m?.k || p.k)], due = start != null && typ ? Math.round((start + typ) / 60) * 60 : null;
+  const exp = due != null ? `<small class="exp">${late ? "היה צפוי" : "צפוי לחזור"} בערך ${hm(due)}</small>` : "";
+  let x = "";
+  if (st === "out") x = dayRel() === 0 && out != null ? `<b>${away(out)}</b><small>בשטח · זינק ${hms(start)}</small>${exp}` : `<b>לא דווח</b><small>${start != null ? "זינוק " + hms(start) : ""}</small>`;
+  else if (st === "wait") x = `<b>${start != null ? hms(start) : "–"}</b><small>זינוק</small>`;
+  else if (st === "back") x = `<b>${p.m?.s === "ok" && p.m.t ? hms(p.m.t) : p.m?.s === "mp" ? "פסול" : p.m?.s === "dnf" ? "לא סיים" : "חזר"}</b><small>חזר</small>`;
+  else x = `<b>לא זינק</b>`;
+  const man = p.man ? `<span class="badge man" title="${esc(p.man.by)}">סומן ידנית</span>` : "";
+  const acts = ME ? `<div class="acts">${st === "back" && p.man?.s === "back" ? `<button type="button" data-undo="${esc(p.key)}">ביטול ״חזר״</button>`
+      : st === "out" ? `<button type="button" class="back" data-mark="back" data-k="${esc(p.key)}">✓ חזר</button>` : ""}`
+    + `${st === "wait" || st === "out" ? `<button type="button" class="dns" data-mark="dns" data-k="${esc(p.key)}">לא זינק</button>` : ""}`
+    + `${p.man?.s === "dns" ? `<button type="button" data-undo="${esc(p.key)}">ביטול ״לא זינק״</button>` : ""}</div>` : "";
+  return { late, due, html: `<li class="${late ? "late" : st === "out" ? "out" : ""}"><span class="n">${esc(p.n)}${late ? `<span class="badge late">באיחור</span>` : ""}${man}</span>
+    <span class="x">${x}</span><span class="m">${meta}</span>${acts}</li>` };
+}
+const OPEN = new Set();          // the sections opened here stay open across renders
+const mono = () => performance.now();      // timers by this clock, not the phone's time of day (which may be changed)
+let TOUCH = -1e9, QUIET = -1e9;   // the last touch on the list; no tap counts for a moment after a mark (a double tap marks one runner)
+const tick = () => { if (mono() - TOUCH < 2500) return setTimeout(tick, 1000); render(); };
+// ---- the day: how many runners were out on the course at each moment - from the start times, the Mulka export and the taps
+const daySec = s => { const d = new Date(s); if (isNaN(d)) return null;       // a moment of the competition day, in seconds of the day
+  const p = il(d); if (ymd && (p.year !== +ymd[1] || p.month !== +ymd[2] || p.day !== +ymd[3])) return null;
+  return p.hour * 3600 + p.minute * 60 + p.second; };
+function spans(all, rel, now) {          // [start, back] of everyone who started; back is Infinity while not reported back
+  const mAt = T.mulka ? daySec(T.mulka.at) : null, out = [];
+  all.forEach(p => {
+    const st = stateOf(p, rel, now), start = p.m?.st ?? p.plan;
+    if (start == null || st === "dns" || st === "wait") return;
+    let back = Infinity;
+    if (st === "back") back = BACK.has(p.m?.s) && p.m.t > 0 ? start + p.m.t       // Mulka's own time first, then the tap at the finish,
+      : (p.man?.s === "back" ? daySec(p.man.at) : null) ?? mAt ?? start;        // then "back by the time of the export"
+    out.push([start, Math.max(start, back)]);
+  });
+  return out;
+}
+const DAY = { v: [], x0: 0, n: 0, k: -1, at: null, w: 0 };    // the counts minute by minute, where the crosshair is, the width drawn
+function dayChart(all, rel, now) {
+  const sp = rel < 0 ? [] : spans(all, rel, now), box = $("day");
+  box.hidden = !sp.length; if (!sp.length) return;
+  const starts = sp.map(s => s[0]), backs = sp.map(s => s[1]).filter(Number.isFinite);
+  const x0 = Math.floor(Math.min(...starts) / 3600) * 3600;
+  const end = rel === 0 ? Math.max(now, x0 + 60) : Math.ceil((Math.max(...starts, ...backs) + 1800) / 900) * 900;   // after the day: to its last return
+  const x1 = Math.max(end, x0 + 3 * 3600), n = Math.ceil((end - x0) / 60), c = new Array(n + 2).fill(0);
+  sp.forEach(([s, b]) => { const i = Math.ceil((s - x0) / 60), j = Number.isFinite(b) ? Math.min(n + 1, Math.max(i, Math.ceil((b - x0) / 60))) : n + 1;
+    if (i <= n) { c[i]++; c[j]--; } });
+  for (let i = 1; i < c.length; i++) c[i] += c[i - 1];
+  const v = c.slice(0, n + 1), peak = Math.max(...v), pk = v.indexOf(peak), never = sp.filter(s => !Number.isFinite(s[1])).length;
+  Object.assign(DAY, { v, x0, n, k: DAY.k > n ? -1 : DAY.k });
+  $("day-s").innerHTML = `שיא: <b>${peak}</b> נווטים בשטח ב-${hm(x0 + pk * 60)}`
+    + (rel === 0 ? ` · עכשיו: <b>${v[n]}</b>` : never ? ` · <b>${never}</b> לא דווחו כחוזרים` : "");
+  // the frame: hours along the bottom, 3-4 lines of counts; the numbers stay in ink, the line in the "out" colour
+  const W = Math.max(280, $("day-p").clientWidth || 600), H = 180, L = 34, R = 14, Tp = 16, B = 22;
+  const X = t => L + (t - x0) / (x1 - x0) * (W - L - R), Y = y => H - B - y / top * (H - Tp - B);
+  const step = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000].find(s => Math.ceil(peak / s) <= 4) || 1000, top = Math.max(step, Math.ceil(peak / step) * step);
+  let g = "";
+  for (let y = 0; y <= top; y += step) g += `<line class="g" x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}"/><text class="ax" x="${L - 6}" y="${Y(y) + 4}" text-anchor="end">${y}</text>`;
+  const every = [1, 2, 3, 4, 6].find(e => (W - L - R) / ((x1 - x0) / 3600) * e >= 44) || 6;
+  for (let h = Math.ceil(x0 / 3600); h * 3600 <= x1; h++) if (h % every === 0 || every === 1)
+    g += `<line class="g" x1="${X(h * 3600)}" x2="${X(h * 3600)}" y1="${Tp}" y2="${H - B}"/><text class="ax" x="${X(h * 3600)}" y="${H - 6}" text-anchor="middle">${h}:00</text>`;
+  let d = `M${X(x0)},${Y(v[0])}`;
+  for (let k = 1; k <= n; k++) if (v[k] !== v[k - 1]) d += `H${X(x0 + k * 60)}V${Y(v[k])}`;
+  d += `H${X(end)}`;
+  const anchor = x => x < L + 40 ? "start" : x > W - R - 40 ? "end" : "middle";
+  const px = X(x0 + pk * 60), py = Y(peak);
+  const nowMark = rel === 0 ? `<line class="now" x1="${X(now)}" x2="${X(now)}" y1="${Tp - 6}" y2="${H - B}"/><text class="ax" x="${X(now)}" y="${Tp - 8}" text-anchor="${anchor(X(now))}">עכשיו</text>`
+    + `<circle class="dot" cx="${X(now)}" cy="${Y(v[n])}" r="4"/>` : "";
+  const focused = $("day-p").contains(document.activeElement), keepK = DAY.k;      // a redraw keeps a keyboard user's place
+  $("day-p").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc($("day-s").textContent)}. חיצים מזיזים את הסמן בגרף.">${g}`
+    + `<path class="ar" d="${d}V${Y(0)}H${X(x0)}Z"/><path class="ln" d="${d}"/>`
+    + `<circle class="dot" cx="${px}" cy="${py}" r="4"/><text class="lb" x="${px}" y="${Math.max(11, py - 9)}" text-anchor="${anchor(px)}">שיא ${peak}</text>`
+    + `${nowMark}<line class="xh" y1="${Tp}" y2="${H - B}" visibility="hidden"/><circle class="dot xd" r="4" visibility="hidden"/></svg><div class="day-tip" aria-live="polite" hidden></div>`;
+  DAY.at = { X, Y, W, L, R, x1 }; DAY.w = $("day-p").clientWidth;
+  if (focused) { DAY.k = keepK; $("day-p").querySelector("svg").focus({ preventScroll: true }); }
+  if (keepK >= 0 && keepK <= n) dayAt(keepK);
+  // the same numbers as a table, hour by hour
+  const rows = [];
+  for (let h = Math.floor(x0 / 3600); h * 3600 <= end; h++) {
+    const a = Math.max(0, (h * 3600 - x0) / 60), b = Math.min(n, (h * 3600 + 3599 - x0) / 60 | 0), seg = v.slice(a, b + 1);
+    if (!seg.length) break;
+    const inH = t => t >= h * 3600 && t < (h + 1) * 3600;
+    rows.push(`<tr><td>${h}:00–${h + 1}:00</td><td>${v[a]}</td><td>${Math.max(...seg)}</td><td>${starts.filter(inH).length}</td><td>${backs.filter(inH).length}</td></tr>`);
+  }
+  $("day-t").innerHTML = `<table><thead><tr><th>שעה</th><th>בשטח בתחילת השעה</th><th>שיא בשעה</th><th>זינקו</th><th>חזרו</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+  tableTools($("day-t"), "day");
+}
+function dayAt(k) {                 // the crosshair at minute k: the count then, in the box above the chart
+  const svg = $("day-p").querySelector("svg"), tip = $("day-p").querySelector(".day-tip"), A = DAY.at;
+  if (!svg || !A) return;
+  DAY.k = k = Math.max(0, Math.min(DAY.n, k));
+  const t = DAY.x0 + k * 60, x = A.X(t), xh = svg.querySelector(".xh"), xd = svg.querySelector(".xd");
+  xh.setAttribute("x1", x); xh.setAttribute("x2", x); xh.setAttribute("visibility", "visible");
+  xd.setAttribute("cx", x); xd.setAttribute("cy", A.Y(DAY.v[k])); xd.setAttribute("visibility", "visible");
+  tip.textContent = ""; const b = document.createElement("b"); b.textContent = DAY.v[k]; tip.append(b, `בשטח · ${hm(t)}`);
+  tip.hidden = false;
+  const w = tip.offsetWidth, px = x / A.W * svg.getBoundingClientRect().width;
+  tip.style.left = Math.max(0, Math.min(svg.getBoundingClientRect().width - w, px - w / 2)) + "px";
+}
+function dayOff() { DAY.k = -1; const p = $("day-p"); p.querySelector(".day-tip")?.setAttribute("hidden", "");
+  p.querySelectorAll(".xh, .xd").forEach(e => e.setAttribute("visibility", "hidden")); }
+function dayPointer(e) {
+  const svg = e.target.closest?.("#day-p svg"); if (!svg || !DAY.at) return;
+  const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * DAY.at.W;
+  const t = DAY.x0 + (x - DAY.at.L) / (DAY.at.W - DAY.at.L - DAY.at.R) * (DAY.at.x1 - DAY.x0);
+  if (t < DAY.x0 - 600 || t > DAY.x0 + DAY.n * 60 + 600) return dayOff();
+  dayAt(Math.round((t - DAY.x0) / 60));
+}
+const set = (id, html) => { const e = $(id); if (e._h !== html) { e.innerHTML = html; e._h = html; } };   // only a change touches the page
+const age = () => !DATA_AT ? "" : FAILED || CACHED || Date.now() - DATA_AT > 150000 ? `לא התעדכן מאז ${clock(DATA_AT)}` : `נכון ל-${clock(DATA_AT)}`;
+function offline() {
+  $("off").hidden = navigator.onLine !== false && !CACHED && !FAILED;
+  if (!$("off").hidden) $("off").textContent = `${navigator.onLine === false ? "אין חיבור" : "אין חיבור לאתר"} – מוצג המצב${DATA_AT ? ` מ-${clock(DATA_AT)}` : " האחרון שנשמר בטלפון"}.`
+    + (ME ? (KEPT ? " סימונים בסיום נשמרים כאן ויישלחו כשיחזור החיבור." : " סימונים בסיום יישלחו כשיחזור החיבור – אל תסגרו את הדף.") : "");
+}
+function render() {
+  const rel = dayRel(), now = rel === 0 ? nowS() : rel > 0 ? 86399 : 0, all = people(), lim = limits(all), med = typical(all);
+  offline();
+  if (rel > 0 && !T.mulka && !Object.keys(T.manual || {}).length) {     // after the day, nothing was tracked: no one is claimed to be out
+    set("sum", ""); set("clubs", ""); $("clubs").hidden = true; $("fc").hidden = true; $("day").hidden = true; $("eodbtn").hidden = true; $("eod").hidden = true;
+    const p = il(new Date()), days = ymd ? Math.round((Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(+ymd[1], ymd[2] - 1, +ymd[3])) / 86400000) : 0;
+    set("list", `<p class="note">${!DATA_AT && !FAILED && /^https?:$/.test(location.protocol) ? "התחרות הסתיימה · טוען את נתוני המעקב…"
+      : FAILED && !DATA_AT ? "התחרות הסתיימה · נתוני המעקב לא נקראו (אין חיבור לאתר)."
+      : days > 60 ? "התחרות הסתיימה לפני יותר מ-60 יום. נתוני המעקב נשמרים באתר 60 יום אחרי התחרות."
+      : "התחרות הסתיימה · לא נאספו בה נתוני מעקב: לא הועלה ייצוא ממולקה ולא סומנו חוזרים."}</p>`);
+    $("src").textContent = age();
+    return;
+  }
+  const w = norm($("q").value).split(" ").filter(Boolean);
+  const S = { out: [], late: [], wait: [], back: [], dns: [] }, clubs = new Map(CLUB ? [[CLUB, { out: 0, late: 0 }]] : []);
+  const F = { m15: 0, m30: 0, none: 0, out: 0 };       // the finish forecast: due back within 15 / 30 minutes (the overdue are listed apart)
+  all.forEach(p => { const st = stateOf(p, rel, now), r = row(p, st, now, lim, med);
+    if (rel >= 0 && st === "out" && p.club) { const c = clubs.get(p.club) || { out: 0, late: 0 }; c.out++; c.late += r.late; clubs.set(p.club, c); }
+    if (rel === 0 && (st === "out" ? !r.late : st === "wait")) {
+      if (st === "out") F.out++;
+      if (r.due == null) { if (st === "out") F.none++; }
+      else if (r.due <= now + 900) { F.m15++; F.m30++; }                  // already due (not yet overdue) counts as any minute now
+      else if (r.due <= now + 1800) F.m30++;
+    }
+    if ((CLUB && p.club !== CLUB) || (w.length && !w.every(x => norm(`${p.n} ${p.k} ${p.c} ${p.club}`).includes(x)))) { if (r.late) S.late.push(null); else S[st].push(null); return; }
+    (r.late ? S.late : S[st]).push({ p, r, st }); });
+  // the clubs with runners out, those with someone late first: a coach sees at once who of theirs is still out there
+  const cl = [...clubs].filter(([c, x]) => x.out || c === CLUB).sort((a, b) => b[1].late - a[1].late || b[1].out - a[1].out || a[0].localeCompare(b[0], "he"));
+  $("clubs").hidden = !cl.length;
+  set("clubs", cl.length ? `<span class="cl-t">מועדונים עם נווטים בשטח – נגיעה מציגה רק את המועדון:</span>` + cl.map(([c, x]) =>
+    `<button type="button" data-club="${esc(c)}" aria-pressed="${c === CLUB}">${esc(c)} · ${x.out}${x.late ? ` <i>(${x.late} באיחור)</i>` : ""}</button>`).join("") : "");
+  const n = k => S[k].length, shown = k => S[k].filter(Boolean);
+  set("sum", `<span class="late"><b>${n("late")}</b>באיחור</span><span class="out"><b>${n("out") + n("late")}</b>בשטח</span>`
+    + `<span><b>${n("back")}</b>חזרו</span><span><b>${n("wait")}</b>טרם זינקו</span><span><b>${n("dns")}</b>לא זינקו</span>`);
+  $("fc").hidden = !F.out;
+  set("fc", !F.out ? "" : F.none === F.out ? "צפויים להגיע לסיום: עוד אין הערכה – היא מתחילה כשבייצוא ממולקה יש 3 שסיימו את המסלול"
+    : `צפויים להגיע לסיום: <span><b>${F.m15}</b> ב-15 הדקות הקרובות</span> · <span><b>${F.m30}</b> ב-30 הדקות הקרובות</span>`
+      + (F.none ? ` · <span>ל-${F.none} מהנמצאים בשטח עוד אין הערכה</span>` : ""));
+  const sortOut = a => a.sort((x, y) => (x.p.m?.st ?? x.p.plan ?? 0) - (y.p.m?.st ?? y.p.plan ?? 0));
+  const list = (title, arr, open = true) => arr.length ? (open ? `<section><h2>${title} <small>${arr.length}</small></h2><ul class="rows">${arr.map(x => x.r.html).join("")}</ul></section>`
+    : `<details data-t="${title}"${OPEN.has(title) ? " open" : ""}><summary>${title} · ${arr.length}</summary><ul class="rows">${arr.map(x => x.r.html).join("")}</ul></details>`) : "";
+  set("list", (rel < 0 ? `<p class="note">התחרות עוד לא התחילה. ביום התחרות יופיעו כאן מי בשטח ומי חזר.</p>` : "")
+    + list("באיחור", sortOut(shown("late"))) + list("בשטח", sortOut(shown("out")))
+    + list("טרם זינקו", shown("wait").sort((x, y) => (x.p.plan ?? 1e9) - (y.p.plan ?? 1e9)), rel === 0)
+    + list("חזרו", shown("back"), false) + list("לא זינקו", shown("dns"), false)
+    || `<p class="note">${w.length ? "לא נמצא נווט כזה" : "אין נתונים"}</p>`);
+  const m = T.mulka, lastMan = Object.values(T.manual || {}).map(x => x.at).sort().pop();
+  const at = s => { const d = new Date(s); return isNaN(d) ? "" : clock(d); };
+  $("src").textContent = [m ? `לפי הייצוא ממולקה מ-${at(m.at)}` : "עוד לא הועלה ייצוא ממולקה – לפי זמני הזינוק בלבד",
+    lastMan ? `סימון ידני אחרון ${at(lastMan)}` : "", age()].filter(Boolean).join(" · ");
+  dayChart(all, rel, now);
+  $("eodbtn").hidden = rel < 0;
+  if (!$("eod").hidden) eodShow(false);
+}
+// ---- the end of the day: who is not reported back, for the safety officer - name, category, club, course, start
+// (no phone numbers: the site has none). Copied as text for a message, or printed alone.
+function eodRows() {
+  const rel = dayRel(), now = rel === 0 ? nowS() : rel > 0 ? 86399 : 0, all = people(), lim = limits(all), med = typical(all);
+  return all.filter(p => stateOf(p, rel, now) === "out").map(p => ({ p, r: row(p, "out", now, lim, med), start: p.m?.st ?? p.plan }))
+    .sort((a, b) => (b.r.late - a.r.late) || ((a.start ?? 0) - (b.start ?? 0)) || a.p.n.localeCompare(b.p.n, "he"));
+}
+const eodWhen = () => clock(DATA_AT && DATA_AT < new Date() ? DATA_AT : new Date());     // as of the data shown, not of the phone's clock
+function eodText(rows) {
+  const day = ymd ? ` · ${+ymd[3]}.${+ymd[2]}.${ymd[1]}` : "";
+  return [`דוח סוף יום · ${TITLE}${day} · ${eodWhen()}`, `לא דווחו כחוזרים: ${rows.length}${rows.some(x => x.r.late) ? ` (באיחור: ${rows.filter(x => x.r.late).length})` : ""}`, ""]
+    .concat(rows.map((x, i) => `${i + 1}. ${x.p.n}${x.r.late ? " – באיחור" : ""} · ${[x.p.k, x.p.club, x.p.c ? "מסלול " + x.p.c : ""].filter(Boolean).join(" · ")}`
+      + ` · זינק ${x.start != null ? hms(x.start) : "–"}`)).join("\n");
+}
+function eodShow(scroll = true) {
+  const rows = eodRows(), late = rows.filter(x => x.r.late).length;
+  $("eod").hidden = false;
+  $("eod-s").textContent = rows.length ? `${rows.length} ${rows.length === 1 ? "נווט לא דווח" : "נווטים לא דווחו"} כחוזרים${late ? `, ${late} מהם באיחור` : ""} – נכון ל-${eodWhen()}.`
+    : `כל מי שזינק דווח כחוזר – נכון ל-${eodWhen()}.`;
+  $("eod-t").innerHTML = rows.length ? `<table class="eodt"><thead><tr><th>#</th><th>שם</th><th>קטגוריה</th><th>מועדון</th><th>מסלול</th><th>זינק</th><th></th></tr></thead><tbody>`
+    + rows.map((x, i) => `<tr${x.r.late ? ' class="late"' : ""}><td>${i + 1}</td><td>${esc(x.p.n)}</td>${x.p.k ? `<td data-l="קטגוריה">${esc(x.p.k)}</td>` : "<td></td>"}`
+      + `${x.p.club ? `<td data-l="מועדון">${esc(x.p.club)}</td>` : "<td></td>"}${x.p.c ? `<td data-l="מסלול">${esc(x.p.c)}</td>` : "<td></td>"}`
+      + `<td data-l="זינק">${x.start != null ? hms(x.start) : "–"}</td><td>${x.r.late ? "באיחור" : ""}</td></tr>`).join("") + `</tbody></table>` : "";
+  if (scroll) $("eod").scrollIntoView({ block: "start" });
+}
+// ---- admins: taps at the finish and the Mulka export, saved to the site (track.json) in small batches.
+// A change waits in PENDING - and in this browser, so a reload, a closed tab or a sign-in that ended keeps it - until it is
+// saved; a saved one stays shown (SAVED) until the site's copy has it (GitHub Pages takes a minute or so). One change of a
+// runner against another phone's: the later one wins. An undo is {s: null, at}.
+const PENDING = new Map(), SAVED = new Map(), OTHERS = new Map(); let PENDING_MULKA = null, SAVED_MULKA = null, FLUSH = 0, SAVING = false, FAILS = 0;
+const KEEP = `lc-track-pending:${SLUG}`, SHOWN = 1200000;      // a saved change is shown until a copy of the site has its save (n), 20 minutes at most
+let KEPT = true;            // false: this browser keeps nothing for the page (a private window, full storage) - then the page says so
+const here = () => KEPT ? "מה שלא נשמר שמור בדפדפן הזה." : "הדפדפן הזה לא שומר את מה שלא נשמר – אל תסגרו את הדף עד שהשמירה תצליח.";
+const soon = () => new Date(Date.now() + 600000).toISOString().slice(0, 19) + "Z";
+const newer = (a, b) => !b || String(b.at || "") > soon() || String(a.at || "") >= String(b.at || "");
+const atOf = x => { const a = String(x || ""); return a > soon() ? "" : a; };     // a time far ahead counts as the oldest
+function put1(manual, k, v) { if (!newer(v, manual[k])) return; if (v.s) manual[k] = { s: v.s, at: v.at, by: v.by || "" }; else delete manual[k]; }
+function overlay(t) {
+  const now = Date.now();
+  for (const [k, v] of SAVED) if ((t.n || 0) >= v.n || now - v.t > SHOWN) SAVED.delete(k); else put1(t.manual, k, v);
+  for (const [k, v] of PENDING) put1(t.manual, k, v);
+  for (const [k, v] of OTHERS) if (!PENDING.has(k)) put1(t.manual, k, v);     // another tab's, not saved yet: shown here, saved by that tab
+  if (SAVED_MULKA) { if ((t.n || 0) >= SAVED_MULKA.n || now - SAVED_MULKA.t > SHOWN) SAVED_MULKA = null; else t.mulka = SAVED_MULKA.m; }
+  if (PENDING_MULKA && (!t.mulka || atOf(t.mulka.at) <= PENDING_MULKA.at)) t.mulka = PENDING_MULKA;
+  return t;
+}
+function stored() {             // the waiting changes this browser keeps for the competition: [[key, change]], Mulka export
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(KEEP) || "null"); } catch (e) {}
+  const m = new Map();
+  for (const x of s && Array.isArray(s.m) ? s.m : []) {
+    const [k, v] = Array.isArray(x) ? x : [];
+    if (typeof k === "string" && k.length <= 140 && v && typeof v === "object" && ISO.test(v.at || "") && (v.s === null || MANUAL.has(v.s)))
+      m.set(k, { s: v.s, at: v.at, by: String(v.by || "").slice(0, 40) });
+  }
+  const mk = s && s.mk && clean({ mulka: s.mk }).mulka;
+  return { m, mk: mk && ISO.test(mk.at) ? mk : null };
+}
+function keep(done = new Map(), doneMulka = null, n = 0) {
+  try {
+    if (n) localStorage.setItem(KEEP + ":n", String(n));          // the save's counter: another tab of this browser shows its taps until a copy has it
+    const { m, mk: was } = stored();
+    for (const [k, v] of done) { const o = m.get(k); if (o && o.at === v.at && o.s === v.s) m.delete(k); }     // saved: not waiting any more
+    for (const [k, v] of PENDING) if (newer(v, m.get(k))) m.set(k, v);
+    let mk = was && !(doneMulka && was.at === doneMulka.at) ? was : null;
+    if (PENDING_MULKA && (!mk || atOf(mk.at) <= PENDING_MULKA.at)) mk = PENDING_MULKA;
+    if (m.size || mk) localStorage.setItem(KEEP, JSON.stringify({ m: [...m], mk })); else localStorage.removeItem(KEEP);
+    return (KEPT = true);
+  } catch (e) { return (KEPT = false); }
+}
+function restore() {
+  const { m, mk } = stored();
+  for (const [k, v] of m) if (newer(v, PENDING.get(k))) PENDING.set(k, v);
+  if (mk && (!PENDING_MULKA || atOf(PENDING_MULKA.at) <= mk.at)) PENDING_MULKA = mk;
+}
+// another tab of this browser: its waiting changes are shown here (that tab saves them), and one it saved is not waiting here
+// any more (so it is never saved again over a later change, such as an undo on another phone)
+addEventListener("storage", e => {
+  if (e.key !== KEEP) return;
+  let old = null;
+  try { old = JSON.parse(e.oldValue || "null"); } catch (x) {}
+  const now = stored(), t = Date.now();
+  let n = 0;
+  try { n = Number(localStorage.getItem(KEEP + ":n")) || 0; } catch (x) {}
+  if (!(n > SITE_T.n)) n = SITE_T.n + 1;
+  for (const x of old && Array.isArray(old.m) ? old.m : []) {
+    const [k, v] = Array.isArray(x) ? x : [], mine = PENDING.get(k);
+    if (v && !now.m.has(k) && mine && mine.at === v.at && mine.s === v.s) { PENDING.delete(k); SAVED.set(k, { ...mine, t, n }); }
+  }
+  if (old && old.mk && !now.mk && PENDING_MULKA && PENDING_MULKA.at === old.mk.at) { SAVED_MULKA = { m: PENDING_MULKA, t, n }; PENDING_MULKA = null; }
+  OTHERS.clear();
+  for (const [k, v] of now.m) if (!PENDING.has(k)) OTHERS.set(k, v);
+  T = overlay(copyT(SITE_T)); tick();
+});
+// a save: a few seconds after the first tap, at most one every GAP (every tap is not its own commit), never before the wait the
+// server asked for, and never pushed back by more taps
+const GAP = 20000;
+let LAST_SAVE = -1e9, NOT_BEFORE = 0, FLUSH_AT = 0;
+function later(ms) {
+  const at = Math.max(mono() + ms, LAST_SAVE + GAP, NOT_BEFORE);
+  if (FLUSH && FLUSH_AT <= at && FLUSH_AT >= NOT_BEFORE) return;
+  clearTimeout(FLUSH); FLUSH_AT = at; FLUSH = setTimeout(() => { FLUSH = 0; flush(); }, Math.max(0, at - mono()));
+}
+const inText = s => s > 90 ? `${Math.ceil(s / 60)} דקות` : `${s} שניות`;
+const API = "https://api.github.com";
+async function gh(path, opt = {}) {
+  const r = await fetch(API + path, { ...opt, cache: "no-store", headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
+    Authorization: "Bearer " + TOKEN, ...(opt.body ? { "Content-Type": "application/json" } : {}) } });
+  const j = await r.json().catch(() => null);
+  if (!r.ok) { const e = new Error(j?.message || String(r.status)); e.status = r.status; throw e; }
+  return j;
+}
+const b64enc = s => { const b = new TextEncoder().encode(s); let t = ""; for (let i = 0; i < b.length; i += 0x8000) t += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(t); };
+const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(String(s).replace(/\s/g, "")), c => c.charCodeAt(0)));
+const say = (t, ok) => { $("amsg").textContent = t; $("amsg").className = "msg " + (ok ? "ok" : "err"); };
+const stamp = () => new Date().toISOString().slice(0, 19) + "Z";
+const GW = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]{20,}\/exec$/.test(D.gateway || "") ? D.gateway : "";
+let MODE = "", GWT = "", USING = "";      // USING: where this tab keeps the sign-in
+const STATUS = { auth: 401, conflict: 409, github: 502, busy: 429, scope: 403 };
+async function gw(a, body = {}) {
+  let j = null;
+  try {
+    const r = await fetch(GW, { method: "POST", cache: "no-store", redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" },
+                                body: JSON.stringify({ ...body, a, token: GWT }) });
+    j = await r.json().catch(() => null);
+  } catch (e) {}
+  if (!j) { const e = new Error("אין חיבור לשרת הכניסה"); e.status = 0; e.code = "net"; throw e; }
+  if (!j.ok) { const e = new Error(String(j.message || j.error).slice(0, 200)); e.code = j.error; e.gh = +j.status || 0; e.retry = +j.retry || 0; e.status = STATUS[j.error] || 400; throw e; }
+  return j;
+}
+async function getTrack() {      // over 1 MB the contents API leaves the text out: then from its blob; never taken as empty
+  let f;
+  if (MODE === "gw") f = await gw("get", { repo: "site", path: "track.json" });
+  else {
+    try { f = await gh(`/repos/${REPO}/contents/track.json?ref=main`); }
+    catch (e) { if (e.status === 404) return { sha: null, content: null }; throw e; }
+    if (!f.content && f.size > 0) f.content = (await gh(`/repos/${REPO}/git/blobs/${f.sha}`)).content;
+  }
+  if (f.sha && !f.content && f.size > 0) throw new Error("לא הצלחנו לקרוא את track.json");
+  return { sha: f.sha || null, content: f.content || null };
+}
+function putTrack(content, sha, message) {
+  if (MODE === "gw") return gw("put", { repo: "site", path: "track.json", content, sha, message });
+  const body = { message, content, branch: "main" }; if (sha) body.sha = sha;
+  return gh(`/repos/${REPO}/contents/track.json`, { method: "PUT", body: JSON.stringify(body) });
+}
+async function flush() {
+  if (SAVING || !ME || (!PENDING.size && !PENDING_MULKA)) return;
+  if (mono() < NOT_BEFORE) return later(0);
+  SAVING = true; say("שומר…", true);
+  const changes = new Map(PENDING), mulka = PENDING_MULKA;
+  let wait = 0, saved = null, savedAll = null;
+  try {
+    for (let i = 0; i < 4; i++) {
+      let all = null;
+      const f = await getTrack(), sha = f.sha;
+      if (f.content) all = JSON.parse(b64dec(f.content));
+      if (!all || typeof all !== "object" || Array.isArray(all) || !all.comps || typeof all.comps !== "object" || Array.isArray(all.comps)) all = { v: 1, comps: {} };
+      const mine = clean(Object.hasOwn(all.comps, SLUG) ? all.comps[SLUG] : null);
+      for (const [k, v] of changes) put1(mine.manual, k, v);
+      if (mulka && (!mine.mulka || atOf(mine.mulka.at) <= mulka.at)) mine.mulka = mulka;
+      mine.n = (mine.n || 0) + 1;
+      all.comps[SLUG] = saved = mine; savedAll = all;
+      const what = [mulka ? "Mulka export" : "", changes.size ? `${changes.size} at the finish` : ""].filter(Boolean).join(" + ");
+      try { await putTrack(b64enc(JSON.stringify(all) + "\n"), sha, MODE === "gw" ? `Track ${SLUG}: ${what}` : `Track ${SLUG}: ${what} - ${ME}`); break; }
+      catch (e) { if (!(e.status === 409 || e.status === 422) || i === 3) throw e; }   // another admin saved: read again, apply on top
+    }
+    const now = Date.now();
+    for (const [k, v] of changes) { if (PENDING.get(k) === v) PENDING.delete(k); SAVED.set(k, { ...v, t: now, n: saved.n }); }
+    if (mulka) { if (PENDING_MULKA === mulka) PENDING_MULKA = null; SAVED_MULKA = { m: mulka, t: now, n: saved.n }; }
+    if (saved.n > SITE_T.n) { SITE_T = copyT(saved); DATA_AT = new Date(); FAILED = false; CACHED = false; }   // the site has it now: older copies are not taken
+    keep(changes, mulka, saved.n); keepCopy(savedAll); FAILS = 0; LAST_SAVE = mono(); NOT_BEFORE = 0;
+    clearTimeout(FLUSH); FLUSH = 0;              // a timer set during this save (from before it) would not wait the GAP
+    say(`נשמר ${clock(new Date())}`, true);
+  } catch (e) {
+    SAVING = false;
+    if (e.status === 401) return signedOut((MODE === "gw" ? "פג תוקף הכניסה – היכנסו שוב. " : "המפתח לא תקין או שפג תוקפו – היכנסו שוב. ")
+                                           + (KEPT ? "מה שלא נשמר שמור בדפדפן הזה ויישמר אחרי הכניסה." : here()));
+    if (e.code === "scope" || e.code === "path" || e.code === "bad" || e.code === "size" || (!e.code && (e.status === 403 || e.status === 404)))
+      return say((!e.code ? `למפתח אין הרשאת כתיבה (GitHub: ${e.message})` : `השמירה נדחתה: ${e.message}`) + " – פנו לבעל האתר. " + here());
+    FAILS++;
+    wait = e.code === "busy" ? Math.max(20, e.retry || 60) * 1000 : Math.min(120000, 3000 * 2 ** FAILS);
+    NOT_BEFORE = mono() + wait;
+    later(0);
+    say(`${e.code === "github" ? `תקלה בשרת הכניסה מול GitHub (${e.gh})` : e.code === "busy" ? "יותר מדי שמירות כרגע" : e.code === "net" ? "אין חיבור"
+         : "שגיאה בשמירה: " + e.message} · ננסה שוב בעוד ${inText(Math.round((FLUSH_AT - mono()) / 1000))}. ${here()}`);
+    return;
+  }
+  SAVING = false;
+  if (ME && (PENDING.size || PENDING_MULKA)) later(0);
+}
+let LAST = null;                 // the last tap here, to undo it: {k, name, before}
+function mark(k, v, quiet) {
+  const e = v || { s: null, at: stamp() }, before = T.manual[k] || null;
+  if (e.s) T.manual[k] = e; else delete T.manual[k];
+  PENDING.set(k, e); keep(); QUIET = mono() + 800; render(); later(4000);
+  if (quiet) return;
+  const name = people().find(p => p.key === k)?.n || k, what = e.s === "back" ? "סומן ״חזר״" : e.s === "dns" ? "סומן ״לא זינק״" : "הסימון בוטל";
+  LAST = { k, name, before };
+  $("last").innerHTML = `${what}: <b>${esc(name)}</b> <button type="button" id="undoLast">ביטול</button>`; $("last").hidden = false;
+}
+$("list").addEventListener("pointerdown", () => { TOUCH = mono(); }, true);
+$("list").addEventListener("toggle", e => { const d = e.target; if (d.dataset && d.dataset.t) { if (d.open) OPEN.add(d.dataset.t); else OPEN.delete(d.dataset.t); } }, true);
+let SPOT = [-1e9, -1e9];           // where the last mark's tap was
+$("list").addEventListener("click", e => {
+  const b = e.target.closest("[data-mark], [data-undo]"); if (!b || !ME || FRAMED) return;
+  // the same spot again right away is a double tap: the row under the finger has changed since the first one
+  if (mono() < QUIET && Math.abs(e.clientX - SPOT[0]) < 40 && Math.abs(e.clientY - SPOT[1]) < 40) return;
+  SPOT = [e.clientX, e.clientY];
+  if (b.dataset.undo) mark(b.dataset.undo, null); else mark(b.dataset.k, { s: b.dataset.mark, at: stamp(), by: ME });
+});
+$("last").addEventListener("click", e => {
+  if (!e.target.closest("#undoLast") || !LAST || !ME || FRAMED) return;
+  const { k, before } = LAST; LAST = null; $("last").hidden = true;
+  mark(k, before ? { s: before.s, at: stamp(), by: ME } : null, true);
+});
+// ---- the Mulka export, read here: LapCombat .lxm or IOF XML 3.0 results - names, classes, statuses, times only
+function parseMulka(text) {
+  const doc = new DOMParser().parseFromString(text, "text/xml");
+  if (doc.querySelector("parsererror")) throw new Error("הקובץ אינו XML תקין");
+  const out = {};
+  const put = (n, k, s, t, st) => { n = squash(n); if (n) out[keyOf(n, k)] = { n: n.slice(0, 80), k: squash(k).slice(0, 40), s, t, st }; };
+  if (doc.querySelector("ResultList")) {
+    const S = { OK: "ok", Finished: "ok", MissingPunch: "mp", Disqualified: "mp", OverTime: "mp", NotCompeting: "mp", SportingWithdrawal: "dnf",
+                DidNotFinish: "dnf", DidNotStart: "dns", DidNotEnter: "dns", Cancelled: "dns", Active: "out", Inactive: "none" };
+    doc.querySelectorAll("ClassResult").forEach(cr => { const cls = cr.querySelector("Class > Name")?.textContent || "";
+      cr.querySelectorAll("PersonResult").forEach(pr => {
+        const fam = pr.querySelector("Person > Name > Family")?.textContent || "", giv = pr.querySelector("Person > Name > Given")?.textContent || "";
+        const res = pr.querySelector("Result"), s = S[squash(res?.querySelector("Status")?.textContent)] || "none";
+        const tm = parseFloat(res?.querySelector("Time")?.textContent), stx = (res?.querySelector("StartTime")?.textContent || "").trim(),
+          own = /T(\d{1,2}):(\d{2}):(\d{2})(?:\.\d+)?$/.exec(stx), sd = new Date(stx),      // no time zone: the time as written
+          sp = own ? { hour: +own[1], minute: +own[2], second: +own[3] } : isNaN(sd) ? null : il(sd);
+        put(`${fam} ${giv}`, cls, s, s === "ok" && isFinite(tm) ? Math.round(tm) : null, sp ? sp.hour * 3600 + sp.minute * 60 + sp.second : null);
+      }); });
+  } else {
+    doc.querySelectorAll("class").forEach(cl => { const cls = cl.getAttribute("name") || "";
+      cl.querySelectorAll("runner").forEach(r => { const res = squash(r.getAttribute("result")).toUpperCase(), t = secs(res);
+        put(r.getAttribute("name"), cls, t != null ? "ok" : res === "MP" ? "mp" : res === "DNF" ? "dnf" : res === "DNS" ? "dns" : "none", t, secs(r.getAttribute("start"))); }); });
+  }
+  if (!Object.keys(out).length) throw new Error("לא נמצאו נווטים בקובץ");
+  return out;
+}
+async function mulkaFile(f) {
+  try {
+    const runners = parseMulka(await f.text());
+    PENDING_MULKA = { at: stamp(), by: ME, file: f.name.slice(0, 120), runners };
+    T.mulka = PENDING_MULKA; keep(); render(); await flush();
+  } catch (e) { say("לא הצלחנו לקרוא את הקובץ: " + e.message); }
+}
+$("mf").addEventListener("change", e => { const f = e.target.files[0]; if (f && ME && !FRAMED) mulkaFile(f); e.target.value = ""; });
+async function login() {
+  try {
+    const me = await gh("/user"), repo = await gh(`/repos/${REPO}`);
+    if (!repo.permissions?.push) { say(`לחשבון ${me.login} אין הרשאה לעדכן את האתר`); return; }
+    try { await gh(`/repos/${REPO}/git/blobs`, { method: "POST", body: JSON.stringify({ content: "", encoding: "utf-8" }) }); }
+    catch (e) { if (e.status === 401) throw e; say("למפתח אין הרשאת כתיבה לאתר (Contents: Read and write)"); return; }
+    ME = me.login; MODE = "gh"; USING = "lc-admin"; try { sessionStorage.setItem("lc-admin", TOKEN); } catch (e) {}
+    signedIn();
+  } catch (e) { say(e.status === 401 ? "המפתח לא תקין או שפג תוקפו" : "לא הצלחנו להתחבר: " + e.message); TOKEN = ""; }
+}
+function signedIn() {
+  NOT_BEFORE = 0; FAILS = 0;
+  $("alog").hidden = true; $("aemail").hidden = true; $("atools").hidden = false; $("who").textContent = `מחובר כ-${ME}`; $("admin").hidden = false;
+  say(PENDING.size || PENDING_MULKA ? "שומר את מה שחיכה לשמירה…" : "", true); render(); if (PENDING.size || PENDING_MULKA) flush();
+  SIGNED_READ = -1e9; load();          // from now on the file itself, not the public copy
+}
+function signedOut(text, ok) {      // what was not saved yet stays (here and in this browser) for the next sign-in
+  clearTimeout(FLUSH); FLUSH = 0; ME = ""; TOKEN = ""; GWT = ""; MODE = "";
+  try { if (USING) sessionStorage.removeItem(USING); } catch (e) {}
+  USING = ""; LAST = null; $("last").hidden = true; $("atools").hidden = true; $("admin").hidden = false; how(!!GW); render(); say(text, ok);
+}
+$("aout").onclick = async () => {        // every sign-in of this tab ends, on the server too (also one made on the admin page)
+  const tokens = MODE === "gw" && GWT ? [GWT] : [];
+  for (const key of ["lc-track-gw", "lc-admin-gw"]) {
+    try { const t = JSON.parse(sessionStorage.getItem(key) || "null"); if (t && typeof t.t === "string" && !tokens.includes(t.t)) tokens.push(t.t); } catch (e) {}
+  }
+  let ok = true;
+  for (const t of tokens) { GWT = t; try { await gw("logout"); } catch (e) { if (e.status !== 401) ok = false; } }
+  try { ["lc-track-gw", "lc-admin-gw", "lc-admin"].forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
+  stopResume();
+  const left = !(PENDING.size || PENDING_MULKA) ? "" : KEPT ? " יש סימונים שעוד לא נשמרו – הם שמורים בדפדפן הזה ויישמרו בכניסה הבאה."
+    : " יש סימונים שעוד לא נשמרו, והדפדפן הזה לא שומר אותם – היכנסו שוב לפני שסוגרים את הדף.";
+  signedOut((ok ? "יצאת." : "יצאת בדפדפן הזה, אבל שרת הכניסה לא ענה – הכניסה תפוג מעצמה תוך 12 שעות.") + left, ok);
+};
+// ---- the email code (the gateway sends it to an approved address). The code goes with the request this tab made; the
+// sign-in made here may only mark runners (track.json), nothing else
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/, RID = /^[0-9a-f]{32}$/;
+let OTP = { email: "", rids: [] }, SENDING = false, VERIFYING = false;
+try { const o = JSON.parse(sessionStorage.getItem("lc-otp-track") || "null"); if (o && typeof o.email === "string" && Array.isArray(o.rids) && o.until > Date.now()) OTP = { email: o.email, rids: o.rids.filter(r => RID.test(r)).slice(0, 3) }; } catch (e) {}
+async function sendCode() {
+  if (SENDING) return;
+  const email = $("em").value.trim().toLowerCase();
+  if (!EMAIL.test(email)) return say("כתובת מייל לא תקינה");
+  SENDING = true; $("sendc").disabled = true; say("שולח…", true);
+  try {
+    const j = await gw("otp", { email });
+    if (OTP.email !== email) OTP = { email, rids: [] };
+    if (RID.test(j.rid || "")) OTP.rids = [j.rid, ...OTP.rids].slice(0, 3);
+    try { sessionStorage.setItem("lc-otp-track", JSON.stringify({ ...OTP, until: Date.now() + 600000 })); } catch (e) {}
+    $("codebox").hidden = false; $("code").value = ""; $("code").focus();
+    say("אם הכתובת מאושרת, נשלח אליה קוד בן 8 ספרות. בדקו את תיבת הדואר (וגם את הספאם). אפשר לבקש עד 3 קודים ב-10 דקות.", true);
+  } catch (e) { say("לא הצלחנו לשלוח קוד: " + e.message); }
+  SENDING = false; $("sendc").disabled = false;
+}
+async function verifyCode() {
+  if (VERIFYING) return;
+  const email = $("em").value.trim().toLowerCase(), code = $("code").value.replace(/\D/g, "");
+  if (code.length !== 8) return say("הקוד הוא 8 ספרות");
+  if (!OTP.rids.length || OTP.email !== email) return say("קודם ״שליחת קוד״ לכתובת הזו, בלשונית הזו");
+  VERIFYING = true; $("vcode").disabled = true; say("בודק…", true);
+  try {
+    const j = await gw("verify", { email, rids: OTP.rids, code, scope: "track" });
+    GWT = j.token; ME = String(j.name || "").slice(0, 40); MODE = "gw"; USING = "lc-track-gw"; OTP = { email: "", rids: [] };
+    try { sessionStorage.removeItem("lc-otp-track"); sessionStorage.setItem("lc-track-gw", JSON.stringify({ t: GWT, n: ME, x: j.exp, c: "track" })); } catch (e) {}
+    signedIn();
+  } catch (e) { say(e.code === "code" ? "הקוד שגוי או שפג תוקפו" : "לא הצלחנו להיכנס: " + e.message); }
+  VERIFYING = false; $("vcode").disabled = false;
+}
+// a sign-in from earlier in this tab (made here, or on the admin page): one attempt at a time; with no connection it is kept
+// and tried again (once a connection is back, or in 20 s)
+let RESUMING = null, RETRY = 0;
+const ONLINE = () => { if (!ME) resume(); };
+function stopResume() { clearTimeout(RETRY); removeEventListener("online", ONLINE); }
+function resume() { return RESUMING || (RESUMING = resume1().finally(() => { RESUMING = null; })); }
+async function resume1() {
+  stopResume();
+  for (const key of ["lc-track-gw", "lc-admin-gw"]) {
+    let s = null;
+    try { s = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) {}
+    if (!s || typeof s.t !== "string" || !(s.x > Date.now())) continue;
+    GWT = s.t; MODE = "gw";
+    try { const j = await gw("me"); ME = String(j.name || "").slice(0, 40); USING = key; signedIn(); return; }
+    catch (e) {
+      if (ME) return;                  // signed in meanwhile
+      GWT = ""; MODE = "";
+      if (e.code === "net") {
+        $("admin").hidden = false; say("אין חיבור כרגע – הכניסה תחזור לבד כשיהיה חיבור.");
+        addEventListener("online", ONLINE, { once: true }); RETRY = setTimeout(ONLINE, 20000);
+        return;
+      }
+      if (e.status === 401) try { sessionStorage.removeItem(key); } catch (x) {}
+    }
+  }
+}
+const how = email => { $("aemail").hidden = !email || !!ME; $("alog").hidden = !!email || !!ME; };
+$("sendc").onclick = sendCode; $("vcode").onclick = verifyCode;
+$("code").addEventListener("keydown", e => { if (e.key === "Enter") verifyCode(); });
+$("em").addEventListener("keydown", e => { if (e.key === "Enter") sendCode(); });
+$("toKey").onclick = e => { e.preventDefault(); how(false); };
+$("adm").onclick = () => { $("admin").hidden = !$("admin").hidden; if (!$("admin").hidden && !ME) (GW ? $("em") : $("tok")).focus(); };
+$("go").onclick = () => { TOKEN = $("tok").value.trim(); $("tok").value = ""; if (TOKEN) login(); };
+$("q").addEventListener("input", render);
+$("eodbtn").onclick = () => eodShow();
+$("eodclose").onclick = () => { $("eod").hidden = true; $("eodbtn").focus(); };
+$("eodcopy").onclick = async () => { const b = $("eodcopy"), t = eodText(eodRows());
+  try { await navigator.clipboard.writeText(t); b.textContent = "✓ הועתק"; }
+  catch (e) { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); b.textContent = "✓ הועתק"; } catch (x) {} a.remove(); }
+  setTimeout(() => { b.textContent = "📋 העתקה לשליחה"; }, 2500); };
+$("eodprint").onclick = () => { document.documentElement.classList.add("print-eod"); print(); setTimeout(() => document.documentElement.classList.remove("print-eod"), 1000); };
+addEventListener("online", () => { render(); load(); }); addEventListener("offline", render);
+// the page opens without a connection too: the worker (sw.js, at the site's root) keeps it and the latest tracking file.
+// The first visit puts them on the phone itself (the worker only starts with the next one), each marked with when.
+async function keepForOffline() {
+  const c = await caches.open("track-v2");
+  for (const u of [location.origin + location.pathname, new URL("../../track.json", location.href).href]) {
+    if (await c.match(u)) continue;
+    const r = await fetch(u, { cache: "no-store" });
+    if (!r.ok) continue;
+    const h = new Headers(r.headers); h.set("x-lc-at", new Date().toISOString());
+    await c.put(u, new Response(await r.blob(), { status: r.status, statusText: r.statusText, headers: h }));
+  }
+}
+if ("serviceWorker" in navigator && window.isSecureContext && /^https?:$/.test(location.protocol) && !FRAMED)
+  navigator.serviceWorker.register(new URL("../../sw.js", location.href), { scope: new URL("../../", location.href).pathname }).then(keepForOffline).catch(e => console.warn("[sw] not kept for offline use:", e));
+$("clubs").addEventListener("click", e => { const b = e.target.closest("[data-club]"); if (!b) return;
+  CLUB = CLUB === b.dataset.club ? "" : b.dataset.club; render(); document.querySelector(`#clubs [data-club="${CSS.escape(b.dataset.club)}"]`)?.focus(); });
+// the day chart: the crosshair follows the mouse or a finger (a vertical swipe still scrolls), and the arrow keys
+$("day-p").addEventListener("pointermove", dayPointer);
+$("day-p").addEventListener("pointerdown", dayPointer);
+$("day-p").addEventListener("pointerleave", e => { if (e.pointerType === "mouse") dayOff(); });
+$("day-p").addEventListener("focusin", () => dayAt(DAY.k >= 0 ? DAY.k : DAY.n));
+$("day-p").addEventListener("focusout", dayOff);
+$("day-p").addEventListener("keydown", e => {
+  const k = DAY.k >= 0 ? DAY.k : DAY.n;
+  const to = { ArrowLeft: k - 5, ArrowRight: k + 5, Home: 0, End: DAY.n }[e.key];   // 5 minutes a key; time runs left to right
+  if (to == null) return; e.preventDefault(); dayAt(to); });
+let dayResize = 0;      // a phone fires "resize" as its address bar comes and goes: only a new width redraws the chart,
+addEventListener("resize", () => { clearTimeout(dayResize); dayResize = setTimeout(() => {      // and never under a finger (tick)
+  const w = $("day-p").clientWidth; if (!$("day").hidden && w && w !== DAY.w) tick(); }, 200); });
+const TITLE = String(D.title || "").replace(/\s*·\s*(?:\d{4}[\/.-]\d{1,2}[\/.-]\d{1,2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4})\s*$/, "");
+$("ttl").textContent = TITLE; document.title = `מעקב נווטים בשטח · ${TITLE}`;
+$("sub").textContent = ymd ? `${+ymd[3]}.${+ymd[2]}.${ymd[1]} · ${START.length} נווטים ברשימת הזינוק` : `${START.length} נווטים ברשימת הזינוק`;
+
+// ---- accessibility toolbar, for every page of the site (kept in this browser, like the colours): text size, high contrast
+// and reading aids; the accessibility statement; "skip to the content"; and the privacy notice (no cookies - only these choices)
+const A11Y = { sizes: [["", "רגיל"], ["l", "גדול"], ["xl", "גדול מאוד"]], el: null, btn: null, done: null,
+  flags: [["contrast", "ניגודיות גבוהה", "טקסט כהה על רקע אחיד, קווים וגבולות בולטים"], ["gray", "גווני אפור", "התצוגה בלי צבעים"],
+          ["links", "הדגשת קישורים", "קישורים ברקע צהוב עם קו תחתון"], ["font", "גופן קריא", "גופן Arial פשוט בכל הטקסט"],
+          ["space", "ריווח טקסט", "יותר רווח בין שורות, מילים ואותיות"], ["focus", "הדגשת מיקוד", "מסגרת בולטת סביב מה שנבחר במקלדת"],
+          ["motion", "עצירת תנועה", "בלי אנימציות ומעברים"], ["cursor", "סמן גדול", "סמן עכבר גדול (במחשב)"]] };
+const STORE = ["lc-theme", "lc-text", "lc-contrast", "lc-a11y", "lc-notice"];   // everything the site keeps in the browser
+const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
+const lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
+const a11yFlags = () => new Set(lsGet("lc-a11y").split(",").filter(Boolean).concat(lsGet("lc-contrast") === "high" ? ["contrast"] : []));
+function a11yApply() {
+  const h = document.documentElement, t = lsGet("lc-text"), f = a11yFlags();
+  if (t && A11Y.sizes.some(([k]) => k === t)) h.dataset.text = t; else delete h.dataset.text;
+  if (f.has("contrast")) h.dataset.contrast = "high"; else delete h.dataset.contrast;
+  A11Y.flags.forEach(([k]) => { if (k !== "contrast") h.classList.toggle("a-" + k, f.has(k)); });
+}
+function a11ySetFlag(k, on) {
+  if (k === "contrast") { lsSet("lc-contrast", on ? "high" : ""); return; }
+  const f = new Set(lsGet("lc-a11y").split(",").filter(Boolean));
+  if (on) f.add(k); else f.delete(k);
+  lsSet("lc-a11y", [...f].filter(x => A11Y.flags.some(([k2]) => k2 === x)).join(","));
+}
+a11yApply();
+const textScale = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ts")) || 1;
+const A11Y_STATEMENT = `<p>האתר מציג ניתוח של תוצאות תחרויות ניווט. הנגשנו אותו לפי ההנחיות של WCAG 2.1 ברמה AA, שעליהן מבוסס תקן ישראלי 5568; לא נערכה בדיקת נגישות רשמית.</p>
+  <ul><li>אפשר לעבור על כל הדף במקלדת, והמיקוד גלוי. הקישור "דלג לתוכן" הוא העצירה הראשונה.</li>
+    <li>בסרגל הזה: הגדלת טקסט עד 130% בלי שהדף ייחתך או ייגלל לרוחב, ניגודיות גבוהה, גווני אפור, הדגשת קישורים, גופן קריא, ריווח טקסט, הדגשת מיקוד, עצירת תנועה וסמן גדול.</li>
+    <li>הטבלאות הן טבלאות רגילות שאפשר למיין ולסנן. לכל גרף יש הסבר, ובמעבר עכבר או בנגיעה מופיעים המספרים.</li>
+    <li>בטלפון: כפתורים גדולים ותצוגה בלי גלילה לרוחב.</li></ul>
+  <p><b>מגבלות ידועות:</b> המפה והגרפים הם תוכן חזותי. את אותם נתונים אפשר לקרוא גם בטבלאות – תוצאות, זמני ביניים וניתוח טעויות.</p>
+  <p>נתקלתם בבעיית נגישות? נשמח לשמוע ולתקן: במייל <a href="mailto:nivut2026@gmail.com" dir="ltr">nivut2026@gmail.com</a>, או <a href="https://github.com/NivutIsrael/nivutisrael.github.io/issues" target="_blank" rel="noopener noreferrer">פנייה דרך GitHub</a>.</p>
+  <p class="upd">ההצהרה עודכנה בנובמבר 2026.</p>`;
+// ---- a result as a picture, to send on WhatsApp and the like. Drawn here, in the browser; nothing is sent anywhere
+// until the person shares or saves it. o: {name, club, comp, date, cat, cp, f, t, behind, m, st}
+const SHARE_FONT = (w, px) => `${w} ${px}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
+const shareTime = t => t == null ? "–" : t >= 3600 ? `${Math.floor(t / 3600)}:${String(Math.floor(t % 3600 / 60)).padStart(2, "0")}:${String(Math.round(t % 60)).padStart(2, "0")}`
+  : `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, "0")}`;
+function shareDraw(o) {
+  const W = 1080, H = 1080, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d"), R = W - 80, L = 80;
+  const fit = (text, w, px, max) => { do { x.font = SHARE_FONT(w, px); px -= 2; } while (x.measureText(text).width > max && px > 20); };
+  const rtl = (text, y, w, px, color, max = R - L) => { x.direction = "rtl"; x.textAlign = "right"; x.fillStyle = color; fit(text, w, px, max); x.fillText(text, R, y); };
+  const ltrAt = (text, xx, y, w, px, color, align = "left") => { x.direction = "ltr"; x.textAlign = align; x.fillStyle = color; x.font = SHARE_FONT(w, px); x.fillText(text, xx, y); };
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+  const g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "#eb6834"); g.addColorStop(.5, "#6250d6"); g.addColorStop(1, "#2671cc");
+  x.fillStyle = g; x.fillRect(0, 0, W, 18);
+  rtl("ניווט ישראל · תוצאות וניתוח", 96, 700, 30, "#2671cc");
+  rtl(o.comp || "", 156, 600, 38, "#52514e");
+  if (o.date) ltrAt(o.date, R, 206, 500, 32, "#6b6a65", "right");
+  rtl(o.name || "", 330, 800, 84, "#0b0b0b");
+  rtl([o.cat ? `קטגוריה ${o.cat}` : "", o.club || ""].filter(Boolean).join(" · "), 394, 500, 38, "#52514e");
+  // the place, big, in a box
+  x.fillStyle = "#eef5fd"; x.beginPath(); x.roundRect ? x.roundRect(L, 450, R - L, 250, 28) : x.rect(L, 450, R - L, 250); x.fill();
+  if (o.cp != null) {
+    rtl("מקום בקטגוריה", 530, 600, 40, "#1c5cab", 420);
+    if (o.f) rtl(`מתוך ${o.f} שסיימו`, 600, 500, 36, "#52514e", 420);
+    ltrAt(String(o.cp), L + 60, 660, 800, 190, "#2671cc");
+  } else rtl(o.st === "MP" ? "פסילה (MP)" : "לא סיים", 600, 800, 90, "#52514e");
+  // the numbers: the name on the right, the number on the left - each in its own direction
+  const rows = [["זמן", shareTime(o.t)], ["פער מהמנצח", o.behind ? "+" + shareTime(o.behind) : o.cp === 1 ? "המנצח" : "–"],
+                ["זמן שאבד בטעויות", o.m != null && o.t ? `${shareTime(o.m)} (${Math.round(o.m / o.t * 100)}%)` : "–"]];
+  rows.forEach(([k, v], i) => { const y = 800 + i * 82;
+    x.fillStyle = "#e1e0d9"; x.fillRect(L, y - 58, R - L, 2);
+    rtl(k, y, 500, 38, "#52514e", 520);
+    if (/^[\d+:().% –]+$/.test(v)) ltrAt(v, L, y, 700, 44, "#0b0b0b"); else { x.direction = "rtl"; x.textAlign = "left"; x.fillStyle = "#0b0b0b"; x.font = SHARE_FONT(700, 44); x.fillText(v, L, y); } });
+  ltrAt("nivutisrael.github.io", W / 2, 1040, 500, 30, "#6b6a65", "center");
+  return cv;
+}
+async function shareCard(o) {
+  const cv = shareDraw(o), blob = await new Promise(ok => cv.toBlob(ok, "image/png"));
+  const name = `${String(o.name || "result").replace(/[\\/:*?"<>|]+/g, " ").trim()} - ${String(o.comp || "").replace(/[\\/:*?"<>|]+/g, " ").trim()}`.slice(0, 90) + ".png";
+  const file = new File([blob], name, { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: `${o.name} · ${o.comp}` }); return "shared"; }
+    catch (e) { if (e && e.name === "AbortError") return "cancelled"; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;      // no sharing here: the picture is saved
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  return "saved";
+}
+// colours: light, dark, or as the system says - one choice for the whole site, kept in this browser
+const THEME_OPTS = [["", "אוטומטי"], ["light", "בהיר"], ["dark", "כהה"]];
+function themePaint() {
+  const t = document.documentElement.dataset.theme || "", l = (THEME_OPTS.find(([k]) => k === t) || THEME_OPTS[0])[1];
+  document.querySelectorAll("#theme").forEach(b => { b.setAttribute("aria-label", `מצב תצוגה: ${l} – לחיצה מחליפה`); b.title = `מצב תצוגה: ${l}`;
+    const s = b.querySelector("[data-theml]"); if (s) s.textContent = l; });
+}
+function themeSet(t) {
+  t = THEME_OPTS.some(([k]) => k === t) ? t : "";
+  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  lsSet("lc-theme", t); themePaint();
+}
+themeSet(lsGet("lc-theme"));            // at once, on every page
+// btn: the page's light / dark button; done(t): what the page redraws for it (the report's charts)
+function themeInit(btn, done) {
+  if (!btn) return;
+  themePaint();
+  btn.addEventListener("click", () => {
+    const i = THEME_OPTS.findIndex(([k]) => k === (document.documentElement.dataset.theme || ""));
+    const [t] = THEME_OPTS[(i + 1) % THEME_OPTS.length]; themeSet(t); done?.(t);
+  });
+}
+function a11yClose() { if (!A11Y.el) return; A11Y.el.remove(); A11Y.el = null; A11Y.btn?.setAttribute("aria-expanded", "false"); }
+function a11yPaint(el) {     // the buttons show the current choices
+  const t = lsGet("lc-text"), f = a11yFlags();
+  el.querySelectorAll("[data-ts]").forEach(b => b.setAttribute("aria-checked", b.dataset.ts === t));
+  el.querySelectorAll("[data-flag]").forEach(b => b.setAttribute("aria-pressed", f.has(b.dataset.flag)));
+}
+function a11yOpen() {
+  a11yClose();
+  const el = document.createElement("div");
+  el.className = "a11y"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "סרגל נגישות");
+  el.innerHTML = `<div class="a11yh"><b>סרגל נגישות</b><button type="button" class="a11yx" aria-label="סגירה">✕</button></div>
+    <div class="a11yl" id="a11ytl">גודל הטקסט</div>
+    <div class="a11ys" role="radiogroup" aria-labelledby="a11ytl">${A11Y.sizes.map(([k, n], i) =>
+      `<button type="button" role="radio" data-ts="${k}" style="font-size:${13 + i * 2}px">${n}</button>`).join("")}</div>
+    <div class="a11yg">${A11Y.flags.map(([k, n, d]) => `<button type="button" class="a11yf${k === "cursor" ? " fine" : ""}" data-flag="${k}"><b>${n}</b><small>${d}</small></button>`).join("")}</div>
+    <button type="button" class="a11yreset">↺ איפוס כל הגדרות הנגישות</button>
+    <details class="a11ystmt"><summary>הצהרת נגישות</summary>${A11Y_STATEMENT}</details>`;
+  a11yPaint(el);
+  document.body.appendChild(el);
+  A11Y.el = el; A11Y.btn.setAttribute("aria-expanded", "true");
+  if (innerWidth > 640) {                    // under the button; phones get a sheet at the bottom (CSS)
+    const r = A11Y.btn.getBoundingClientRect();
+    el.style.left = Math.max(8, Math.min(innerWidth - el.offsetWidth - 8, r.left)) + "px"; el.style.top = (r.bottom + 6) + "px";
+    el.style.maxHeight = (innerHeight - r.bottom - 18) + "px";
+  }
+  el.addEventListener("click", e => {
+    e.stopPropagation();
+    const b = e.target.closest("[data-ts], [data-flag], .a11yreset, .a11yx");
+    if (!b) return;
+    if (b.matches(".a11yx")) { a11yClose(); A11Y.btn.focus(); return; }
+    if (b.dataset.ts != null) lsSet("lc-text", b.dataset.ts);
+    else if (b.dataset.flag) a11ySetFlag(b.dataset.flag, b.getAttribute("aria-pressed") !== "true");
+    else { lsSet("lc-text", ""); lsSet("lc-contrast", ""); lsSet("lc-a11y", ""); }
+    a11yApply(); a11yPaint(el); A11Y.done?.();
+  });
+  el.querySelector('[aria-checked="true"]')?.focus({ preventScroll: true });
+}
+// the privacy notice, once: the site keeps no cookies, only the choices above (and the colours) in this browser
+function noticeInit() {
+  if (lsGet("lc-notice")) return;
+  const el = document.createElement("div");
+  el.className = "notice"; el.setAttribute("role", "region"); el.setAttribute("aria-label", "פרטיות ועוגיות");
+  el.innerHTML = `<p><b>פרטיות:</b> האתר לא משתמש בעוגיות (cookies), לא עוקב אחריך ולא מציג פרסומות. רק ההעדפות שבחרת – צבעים, גודל טקסט ונגישות – נשמרות בדפדפן שלך, כדי שיישארו גם בפעם הבאה.</p>
+    <div class="nb"><button type="button" class="ok">הבנתי</button><button type="button" class="del">מחיקת ההעדפות השמורות</button></div>`;
+  document.body.appendChild(el);
+  el.querySelector(".ok").addEventListener("click", e => { e.stopPropagation(); lsSet("lc-notice", "1"); el.remove(); });
+  el.querySelector(".del").addEventListener("click", e => { e.stopPropagation(); STORE.forEach(k => lsSet(k, "")); location.reload(); });
+}
+// btn: the page's accessibility button; done(): redraw what depends on the text (the report's charts)
+function a11yInit(btn, done) {
+  document.querySelectorAll("[data-skip]").forEach(a => a.addEventListener("click", e => {   // "skip to the content"
+    e.preventDefault(); e.stopPropagation(); const t = document.querySelector(a.dataset.skip);
+    if (t) { if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1"); t.focus(); } }));
+  noticeInit();
+  if (!btn) return;
+  A11Y.btn = btn; A11Y.done = done;
+  btn.setAttribute("aria-haspopup", "dialog"); btn.setAttribute("aria-expanded", "false");
+  btn.addEventListener("click", e => { e.stopPropagation(); A11Y.el ? a11yClose() : a11yOpen(); });
+  document.addEventListener("click", e => { if (A11Y.el && !A11Y.el.contains(e.target) && !btn.contains(e.target)) a11yClose(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && A11Y.el) { a11yClose(); btn.focus(); } });
+}
+// ---- tables: Excel-style sort and filter on every column. The state survives re-renders (by table title);
+// a header click sorts ↑ / ↓ / back to the default; ▾ opens the menu; the bar above the table resets it all.
+const TT = { st: Object.create(null), pop: null, bound: false };
+const ttEsc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+// cell text -> a number (m:ss / h:mm:ss in seconds, "12.5%", "+3") or text; "" and "–" are empty
+function ttVal(s) {
+  const t = String(s ?? "").replace(/\u2212/g, "-").trim();
+  if (!t || t === "–" || t === "-") return null;
+  let m = /^([+-]?)(\d+):(\d{2})(?::(\d{2}))?(?!\d)/.exec(t);
+  if (m) { const v = m[4] != null ? m[2] * 3600 + m[3] * 60 + +m[4] : m[2] * 60 + +m[3]; return m[1] === "-" ? -v : v; }
+  m = /^[+-]?\d+(?:\.\d+)?(?![\d:/.])/.exec(t);
+  return m ? +m[0] : t;
+}
+const ttText = td => {                       // what a cell shows in the filter list
+  if (!td) return "";
+  if (td.dataset.f != null) return td.dataset.f;
+  const a = td.querySelector("a[data-runner]") || td.querySelector(".bar b");
+  return (a || td).textContent.replace(/\s+/g, " ").trim();
+};
+const ttKey = td => {                        // what a cell is sorted by (data-v when the text is not enough)
+  if (!td) return null;
+  const v = td.dataset.v;
+  return v == null ? ttVal(ttText(td)) : v === "" ? null : isFinite(v) ? +v : v;
+};
+// categories as orienteers look for them: D (women) by age, then H (men), then the rest (בינוני, קצרצר …) by the alphabet;
+// a competitor's category that is not given comes last. Any other text is simply by the alphabet.
+const catKey = k => { const m = /^([DH])\s*(\d+)\s*(.*)$/i.exec(k);     // [group, age, the rest]: D14A -> [0, 14, "A"]
+  return m ? [m[1].toUpperCase() === "D" ? 0 : 1, +m[2], m[3]] : [k ? 2 : 3, 0, k]; };
+const catCmp = (a, b) => { const x = catKey(String(a ?? "")), y = catKey(String(b ?? ""));
+  return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2], "he", { numeric: true }); };
+// empty cells always last; in a column of numbers, text counts as empty
+function ttCmp(a, b, dir, num) {
+  if (num) { if (typeof a !== "number") a = null; if (typeof b !== "number") b = null; }
+  if (a == null || b == null) return a == null ? (b == null ? 0 : 1) : -1;
+  const d = typeof a === "number" && typeof b === "number" ? a - b : typeof a === "number" ? -1 : typeof b === "number" ? 1
+    : catCmp(a, b);
+  return d * dir;
+}
+const ttRows = tb => [...tb.tBodies[0].rows];
+const ttHead = tb => [...tb.tHead.rows[tb.tHead.rows.length - 1].cells];
+const ttLabel = th => [...th.childNodes].filter(n => !n.classList?.contains("ttb")).map(n => n.textContent).join(" ").replace(/\s+/g, " ").trim();
+const ttTable = k => [...document.querySelectorAll("table[data-ttkey]")].find(t => t.dataset.ttkey === k);
+const ttBarOf = tb => { const at = tb.closest(".scroll") || tb; return at.previousElementSibling?.classList.contains("ttbar") ? at.previousElementSibling : null; };
+
+function tableTools(root, scope = "") {
+  if (!root) return;
+  ttBind();
+  root.querySelectorAll("table").forEach(tb => {
+    if (!tb.tHead || !tb.tBodies[0] || tb.dataset.tt === "off" || tb.dataset.ttkey) return;
+    const box = tb.closest(".card, section, aside, #me") || root;
+    const title = (box.querySelector("h2, h3")?.textContent || "").replace(/\s+/g, " ").trim();
+    tb.dataset.ttkey = `${scope}|${title}|${[...box.querySelectorAll("table")].indexOf(tb)}`;
+    // every table starts with the row number (מס״ד): the rows in the order they are shown now, after sorting and filtering
+    [...tb.tHead.rows].forEach((tr, i, all) => tr.insertAdjacentHTML("afterbegin", i === all.length - 1
+      ? `<th class="ttn" scope="col" data-tt="no" data-short="">מס״ד</th>` : `<th class="ttn"></th>`));
+    [...tb.tBodies[0].rows, ...(tb.tFoot ? tb.tFoot.rows : [])].forEach(r => r.insertAdjacentHTML("afterbegin", `<td class="ttn"></td>`));
+    ttRows(tb).forEach((r, i) => r.dataset.tti = i);
+    const head = ttHead(tb);
+    // the card view on phones: each cell learns its column's short name and its role (rank / name / main ...)
+    if (tb.classList.contains("cards")) {
+      const short = th => [...th.childNodes].filter(n => n.nodeName !== "SMALL").map(n => n.textContent).join(" ").replace(/\s+/g, " ").trim();
+      const lab = head.map(th => th.dataset.short ?? short(th)), role = head.map(th => th.dataset.card);
+      ttRows(tb).forEach(r => [...r.cells].forEach((td, j) => { if (td.dataset.l == null && lab[j]) td.dataset.l = lab[j];
+        if (role[j]) td.classList.add("cd-" + role[j]); }));
+    }
+    head.forEach((th, j) => {
+      if (th.dataset.tt === "no") return;
+      th.classList.add("tt");
+      th.insertAdjacentHTML("beforeend", `<button type="button" class="ttb" data-ttc="${j}" aria-label="מיון וסינון" aria-haspopup="dialog">▾</button>`);
+    });
+    const bar = document.createElement("div"); bar.className = "ttbar"; bar.hidden = true;
+    const at = tb.closest(".scroll") || tb; at.parentNode.insertBefore(bar, at);
+    if (tb.classList.contains("cards") && head.some(th => th.dataset.tt !== "no")) {   // phones: the header is hidden, this button lists its columns
+      const tools = document.createElement("div"); tools.className = "cdtools";
+      tools.innerHTML = `<button type="button" data-ttcols="${ttEsc(tb.dataset.ttkey)}" aria-haspopup="dialog">⇅ מיון וסינון</button><small></small>`;
+      at.parentNode.insertBefore(tools, bar);
+    }
+    ttApply(tb);
+  });
+}
+
+function ttApply(tb) {
+  const st = TT.st[tb.dataset.ttkey] || {}, ex = st.ex || {}, rows = ttRows(tb), head = ttHead(tb), body = tb.tBodies[0];
+  const cols = Object.keys(ex);
+  let shown = 0;
+  rows.forEach(r => { const ok = cols.every(j => !ex[j].has(ttText(r.cells[j]))); r.classList.toggle("tt-hide", !ok); shown += ok; });
+  const order = rows.slice().sort((a, b) => a.dataset.tti - b.dataset.tti);
+  if (st.sort) {
+    const [j, dir] = st.sort, v = new Map(rows.map(r => [r, ttKey(r.cells[j])])), vals = [...v.values()].filter(x => x != null);
+    const num = vals.filter(x => typeof x === "number").length * 2 >= vals.length;
+    order.sort((a, b) => ttCmp(v.get(a), v.get(b), dir, num) || a.dataset.tti - b.dataset.tti);
+  }
+  order.forEach(r => body.appendChild(r));
+  let n = 0;
+  order.forEach(r => { const c = r.cells[0]; if (c?.classList.contains("ttn")) c.textContent = r.classList.contains("tt-hide") ? "" : ++n; });
+  head.forEach((th, j) => { const b = th.querySelector(".ttb"); if (!b) return;
+    const s = st.sort?.[0] === j ? st.sort[1] : 0;
+    th.classList.toggle("tt-asc", s > 0); th.classList.toggle("tt-desc", s < 0);
+    th.setAttribute("aria-sort", s > 0 ? "ascending" : s < 0 ? "descending" : "none");
+    b.classList.toggle("on", !!ex[j]?.size); b.textContent = s > 0 ? "▲" : s < 0 ? "▼" : "▾"; });
+  const bar = ttBarOf(tb); if (!bar) return;
+  const hint = bar.previousElementSibling?.classList.contains("cdtools") && bar.previousElementSibling.querySelector("small");
+  if (hint) hint.textContent = `${shown < rows.length ? `${shown} מתוך ${rows.length}` : rows.length} שורות · לפי כל עמודה`;
+  bar.hidden = !(st.sort || cols.length);
+  if (bar.hidden) return;
+  const name = j => `<b>${ttEsc(ttLabel(head[j]) || "☆")}</b>`;
+  bar.innerHTML = `<span>${shown < rows.length ? `מוצגות <b>${shown}</b> מתוך ${rows.length} שורות` : `${rows.length} שורות`}`
+    + (st.sort ? ` · ממוין לפי ${name(st.sort[0])} ${st.sort[1] > 0 ? "↑" : "↓"}` : "")
+    + (cols.length ? ` · מסונן לפי ${cols.map(name).join(", ")}` : "") + `</span>`
+    + `<button type="button" data-ttreset="1" data-tip="המיון והסדר המקוריים, בלי סינון">↺ איפוס לברירת המחדל</button>`;
+}
+
+function ttSet(k, f) {
+  const st = TT.st[k] || (TT.st[k] = {}); st.ex ||= {};
+  f(st);
+  Object.keys(st.ex).forEach(j => st.ex[j].size || delete st.ex[j]);
+  if (!st.sort && !Object.keys(st.ex).length) delete TT.st[k];
+  const tb = ttTable(k); if (tb) ttApply(tb);
+}
+
+function ttOpen(btn) {
+  ttClose();
+  const th = btn.closest("th"), tb = th.closest("table"), k = tb.dataset.ttkey, j = +btn.dataset.ttc;
+  const st = TT.st[k] || {}, ex = st.ex || {};
+  // the values of the rows that pass the other columns' filters, as in Excel
+  const pass = r => Object.keys(ex).every(c => +c === j || !ex[c].has(ttText(r.cells[c])));
+  const counts = new Map();
+  ttRows(tb).filter(pass).forEach(r => { const v = ttText(r.cells[j]); counts.set(v, (counts.get(v) || 0) + 1); });
+  (ex[j] || []).forEach(v => counts.has(v) || counts.set(v, 0));
+  const vals = [...counts.keys()], sv = vals.map(ttVal);
+  const num = sv.filter(x => typeof x === "number").length * 2 >= sv.filter(x => x != null).length;
+  const order = vals.map((_, i) => i).sort((a, b) => ttCmp(sv[a], sv[b], 1, false) || vals[a].localeCompare(vals[b], "he"));
+  const s = st.sort?.[0] === j ? st.sort[1] : 0, hint = th.dataset.tth;
+  const pop = document.createElement("div");
+  pop.className = "ttpop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "מיון וסינון");
+  pop.innerHTML = `<div class="tthead"><b>${ttEsc(ttLabel(th) || "עמודה")}</b>${hint ? `<small>${ttEsc(hint)}</small>` : ""}</div>
+    <button type="button" class="ttsort${s > 0 ? " on" : ""}" data-dir="1">${num ? "↑ מיון מהקטן לגדול" : "↑ מיון מא׳ עד ת׳"}</button>
+    <button type="button" class="ttsort${s < 0 ? " on" : ""}" data-dir="-1">${num ? "↓ מיון מהגדול לקטן" : "↓ מיון מת׳ עד א׳"}</button>
+    <div class="ttsep"></div>
+    <input type="search" class="ttq" placeholder="חיפוש ברשימה…" aria-label="חיפוש ברשימה" autocomplete="off">
+    <div class="ttall"><button type="button" data-ttall="1">✓ בחירת הכול</button><button type="button" data-ttall="0">✕ ביטול הכול</button></div>
+    <div class="ttlist">${order.map(i => `<label><input type="checkbox" data-i="${i}" ${ex[j]?.has(vals[i]) ? "" : "checked"}><span>${vals[i] === "" ? "(ריק)" : ttEsc(vals[i])}</span><small>${counts.get(vals[i])}</small></label>`).join("")}</div>
+    <div class="ttfoot"><button type="button" class="ttclear" ${ex[j]?.size ? "" : "disabled"}>ניקוי הסינון</button><button type="button" class="ttcancel">ביטול</button><button type="button" class="ttok">אישור</button></div>`;
+  document.body.appendChild(pop);
+  TT.pop = { el: pop, k, j, vals, btn };
+  if (innerWidth > 640) {                    // under the header; phones get a sheet at the bottom (CSS)
+    const r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + "px";
+    pop.style.top = (r.bottom + 6 + h > innerHeight - 8 ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
+  }
+  if (!matchMedia("(pointer: coarse)").matches) pop.querySelector(".ttq").focus();
+}
+function ttCols(btn) {          // phones: the columns of a card table in one list; a tap opens that column's menu
+  ttClose();
+  const k = btn.dataset.ttcols, tb = ttTable(k); if (!tb) return;
+  const st = TT.st[k] || {}, ex = st.ex || {};
+  const pop = document.createElement("div");
+  pop.className = "ttpop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "מיון וסינון");
+  pop.innerHTML = `<div class="tthead"><b>מיון וסינון</b><small>בחרו עמודה כדי למיין לפיה או לסנן את הערכים שלה</small></div><div class="ttcols">`
+    + ttHead(tb).map((th, j) => !th.querySelector(".ttb") ? "" : `<button type="button" class="ttcol" data-ttcol="${j}"><span>${ttEsc(ttLabel(th) || "עמודה " + (j + 1))}</span>`
+      + `<small>${st.sort?.[0] === j ? `<b>${st.sort[1] > 0 ? "▲ ממוין" : "▼ ממוין"}</b> ` : ""}${ex[j]?.size ? "<b>מסונן</b> " : ""}‹</small></button>`).join("")
+    + `</div><div class="ttfoot"><button type="button" class="ttcancel">סגירה</button></div>`;
+  document.body.appendChild(pop);
+  TT.pop = { el: pop, k, j: -1, vals: [], btn };
+}
+function ttClose() { if (!TT.pop) return; const b = TT.pop.btn; TT.pop.el.remove(); TT.pop = null; if (b?.isConnected && !matchMedia("(pointer: coarse)").matches) b.focus({ preventScroll: true }); }
+function ttCanOk() { const P = TT.pop; if (!P) return;
+  P.el.querySelector(".ttok").disabled = ![...P.el.querySelectorAll(".ttlist label:not([hidden]) input")].some(cb => cb.checked); }
+function ttOk() {
+  const P = TT.pop; if (!P || P.el.querySelector(".ttok").disabled) return;
+  const searching = !!P.el.querySelector(".ttq").value.trim(), ex = new Set();
+  // as in Excel: with a search, only the matching values that are ticked stay
+  P.el.querySelectorAll(".ttlist input").forEach(cb => { if (!cb.checked || (searching && cb.closest("label").hidden)) ex.add(P.vals[+cb.dataset.i]); });
+  ttSet(P.k, st => { if (ex.size) st.ex[P.j] = ex; else delete st.ex[P.j]; });
+  ttClose();
+}
+function ttBind() {
+  if (TT.bound) return;
+  TT.bound = true;
+  // capture: handled here before the page's own click handlers
+  document.addEventListener("click", e => {
+    const t = e.target, P = TT.pop;
+    if (P && P.el.contains(t)) {
+      e.stopPropagation();
+      const col = t.closest("[data-ttcol]");
+      if (col) { const b = ttHead(ttTable(P.k))[+col.dataset.ttcol]?.querySelector(".ttb"); if (b) ttOpen(b); return; }
+      const sb = t.closest(".ttsort");
+      if (sb) { const d = +sb.dataset.dir; ttSet(P.k, st => st.sort = st.sort?.[0] === P.j && st.sort[1] === d ? null : [P.j, d]); ttClose(); }
+      else if (t.closest("[data-ttall]")) { const on = t.closest("[data-ttall]").dataset.ttall === "1";
+        P.el.querySelectorAll(".ttlist label:not([hidden]) input").forEach(cb => cb.checked = on); ttCanOk(); }
+      else if (t.closest(".ttclear")) { ttSet(P.k, st => delete st.ex[P.j]); ttClose(); }
+      else if (t.closest(".ttcancel")) ttClose();
+      else if (t.closest(".ttok")) ttOk();
+      return;
+    }
+    const b = t.closest(".ttb");
+    if (b) { e.stopPropagation(); e.preventDefault(); P?.btn === b ? ttClose() : ttOpen(b); return; }
+    const cb = t.closest("[data-ttcols]");
+    if (cb) { e.stopPropagation(); e.preventDefault(); P?.btn === cb ? ttClose() : ttCols(cb); return; }
+    if (P) ttClose();                          // a click outside closes the menu and still does what it was for
+    const rs = t.closest("[data-ttreset]");
+    if (rs) { e.stopPropagation(); const nx = rs.closest(".ttbar")?.nextElementSibling, tb = nx?.matches("table") ? nx : nx?.querySelector("table");
+      if (tb) { delete TT.st[tb.dataset.ttkey]; ttApply(tb); } return; }
+    const th = t.closest("th.tt");
+    if (th && th.dataset.legmap == null && !t.closest("a, button, input, select")) {
+      e.stopPropagation();
+      const tb = th.closest("table"), j = ttHead(tb).indexOf(th);
+      ttSet(tb.dataset.ttkey, st => { const s = st.sort?.[0] === j ? st.sort[1] : 0; st.sort = s === 0 ? [j, 1] : s > 0 ? [j, -1] : null; });
+    }
+  }, true);
+  document.addEventListener("change", e => { if (TT.pop?.el.contains(e.target)) ttCanOk(); });
+  document.addEventListener("input", e => {
+    if (!TT.pop || !e.target.classList?.contains("ttq")) return;
+    const q = e.target.value.trim().toLowerCase();
+    TT.pop.el.querySelectorAll(".ttlist label").forEach(l => l.hidden = !!q && !l.textContent.toLowerCase().includes(q));
+    ttCanOk();
+  });
+  document.addEventListener("keydown", e => {
+    if (!TT.pop) return;
+    if (e.key === "Escape") { e.preventDefault(); ttClose(); }
+    else if (e.key === "Enter" && e.target.classList?.contains("ttq")) { e.preventDefault(); ttOk(); }
+  }, true);
+}
+
+a11yInit($("a11yb"), render); themeInit($("theme"));
+try { TOKEN = sessionStorage.getItem("lc-admin") || ""; } catch (e) {}
+how(!!GW); restore();
+if (OTP.rids.length && !FRAMED) { $("em").value = OTP.email; $("codebox").hidden = false; }
+if (!REPO || FRAMED) { $("adm").hidden = true; TOKEN = ""; }
+else if (TOKEN) { $("admin").hidden = false; login(); } else if (GW) resume();
+if (PENDING.size || PENDING_MULKA) { T = overlay(T); if (!FRAMED && REPO) { $("admin").hidden = false; if (!TOKEN) say(`יש ${PENDING.size + (PENDING_MULKA ? 1 : 0)} שינויים שעוד לא נשמרו – היכנסו כדי לשמור אותם.`); } }
+try { localStorage.setItem("lc-probe", "1"); localStorage.removeItem("lc-probe"); } catch (e) { KEPT = false; }
+render(); load();
+setInterval(load, 30000); setInterval(tick, 10000);
+</script>
+</body>
+</html>
