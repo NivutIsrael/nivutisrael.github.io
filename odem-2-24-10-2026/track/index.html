@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xvjTEYuOTp0oL2JyZFuky+t+6aCqG0895sNbnKhokpE=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TXhH5Kzusl+uHcCVCFVWFpCswvBw9V3NdswvBuLv89Y=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>מעקב נווטים בשטח</title>
@@ -73,6 +73,11 @@ section { margin: 14px 0 0; } h2 { font-size: calc(17px * var(--ts, 1)); margin:
 .day-tip { position: absolute; top: 2px; pointer-events: none; direction: rtl; white-space: nowrap; background: var(--surface); color: var(--ink-2);
   border: 1px solid var(--rule-2); border-radius: 8px; padding: 3px 9px; font-size: calc(12.5px * var(--ts, 1)); box-shadow: 0 4px 14px rgba(0,0,0,.14); }
 .day-tip[hidden] { display: none; } .day-tip b { color: var(--ink); font-size: calc(15px * var(--ts, 1)); margin-inline-end: 4px; }
+.empty-state { display: grid; justify-items: center; gap: 6px; text-align: center; margin: 22px 0; padding: 30px 18px; border: 1px dashed var(--rule-2);
+  border-radius: 14px; background: var(--surface); }
+.empty-state svg { width: 46px; height: 46px; fill: none; stroke: var(--accent); stroke-width: 1.6; opacity: .8; }
+.empty-state .note { margin: 0; max-width: 46ch; color: var(--ink-2); font-size: calc(15px * var(--ts, 1)); }
+.es-links { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin: 6px 0 0; font-weight: 600; } .es-links a { text-decoration: none; }
 .day-t { margin-top: 8px; } .day-t summary { cursor: pointer; font-weight: 600; color: var(--accent); font-size: calc(13.5px * var(--ts, 1)); }
 .day-t table { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--ts, 1)); margin-top: 6px; font-variant-numeric: tabular-nums; }
 .day-t th, .day-t td { text-align: center; padding: 5px 6px; border-bottom: 1px solid var(--rule); } .day-t th { color: var(--ink-2); font-weight: 600; }
@@ -194,7 +199,9 @@ tr.tt-hide { display: none; }
 .sitebar .navlinks a.home:hover { background: color-mix(in srgb, var(--accent) 76%, #000); }
 @media (max-width: 640px) {   /* phones: the site's pages and the corner buttons, then the outside links in a row of their own */
   .sitebar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nav icons" "more more"; margin-bottom: 10px; padding-bottom: 10px; }
-  .navlinks { gap: 6px; } .sitebar .navlinks a, .sitebar .navlinks button { height: 36px; padding: 0 11px; font-size: calc(13px * var(--ts, 1)); } }
+  .navlinks { gap: 6px; } .sitebar .navlinks a, .sitebar .navlinks button { height: 36px; padding: 0 11px; font-size: calc(13px * var(--ts, 1)); }
+  .sitebar .navlinks { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding-bottom: 2px; }
+  .sitebar .navlinks::-webkit-scrollbar { display: none; } .sitebar .navlinks > * { flex: none; } }   /* one row each, sideways */
 /* the row number (מס״ד) each table starts with: narrow and quiet */
 th.ttn, td.ttn { width: 1%; white-space: nowrap; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 td.ttn { font-size: calc(12px * var(--ts, 1)); }
@@ -564,10 +571,11 @@ function render() {
   if (rel > 0 && !T.mulka && !Object.keys(T.manual || {}).length) {     // after the day, nothing was tracked: no one is claimed to be out
     set("sum", ""); set("clubs", ""); $("clubs").hidden = true; $("fc").hidden = true; $("day").hidden = true; $("eodbtn").hidden = true; $("eod").hidden = true;
     const p = il(new Date()), days = ymd ? Math.round((Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(+ymd[1], ymd[2] - 1, +ymd[3])) / 86400000) : 0;
-    set("list", `<p class="note">${!DATA_AT && !FAILED && /^https?:$/.test(location.protocol) ? "התחרות הסתיימה · טוען את נתוני המעקב…"
+    set("list", `<div class="empty-state"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/></svg><p class="note">${!DATA_AT && !FAILED && /^https?:$/.test(location.protocol) ? "התחרות הסתיימה · טוען את נתוני המעקב…"
       : FAILED && !DATA_AT ? "התחרות הסתיימה · נתוני המעקב לא נקראו (אין חיבור לאתר)."
       : days > 60 ? "התחרות הסתיימה לפני יותר מ-60 יום. נתוני המעקב נשמרים באתר 60 יום אחרי התחרות."
-      : "התחרות הסתיימה · לא נאספו בה נתוני מעקב: לא הועלה ייצוא ממולקה ולא סומנו חוזרים."}</p>`);
+      : "התחרות הסתיימה · לא נאספו בה נתוני מעקב: לא הועלה ייצוא ממולקה ולא סומנו חוזרים."}</p>`
+      + `<p class="es-links"><a href="../start/">זמני הזינוק ←</a><a href="../../">כל התחרויות ←</a></p></div>`);
     $("src").textContent = age();
     return;
   }

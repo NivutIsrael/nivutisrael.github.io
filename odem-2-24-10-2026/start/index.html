@@ -140,7 +140,9 @@ tr.tt-hide { display: none; }
 .sitebar .navlinks a.home:hover { background: color-mix(in srgb, var(--accent) 76%, #000); }
 @media (max-width: 640px) {   /* phones: the site's pages and the corner buttons, then the outside links in a row of their own */
   .sitebar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nav icons" "more more"; margin-bottom: 10px; padding-bottom: 10px; }
-  .navlinks { gap: 6px; } .sitebar .navlinks a, .sitebar .navlinks button { height: 36px; padding: 0 11px; font-size: calc(13px * var(--ts, 1)); } }
+  .navlinks { gap: 6px; } .sitebar .navlinks a, .sitebar .navlinks button { height: 36px; padding: 0 11px; font-size: calc(13px * var(--ts, 1)); }
+  .sitebar .navlinks { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding-bottom: 2px; }
+  .sitebar .navlinks::-webkit-scrollbar { display: none; } .sitebar .navlinks > * { flex: none; } }   /* one row each, sideways */
 /* the row number (מס״ד) each table starts with: narrow and quiet */
 th.ttn, td.ttn { width: 1%; white-space: nowrap; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 td.ttn { font-size: calc(12px * var(--ts, 1)); }
