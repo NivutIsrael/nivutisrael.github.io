@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kbUXQHh6riCAKMTCXVY0wRsWRGj0qtOy6kCS1O4qfNM=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hJH4DkMxVHpzulmcSpPisZMNesEz9ADNHwBJeUTNsW4=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -141,11 +141,17 @@ details ol { padding-inline-start: 20px; } code { background: var(--paper-2); pa
 /* the privacy notice: no cookies, only the preferences in this browser */
 .notice { position: fixed; z-index: 44; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 780px; margin: 0 auto;
           background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.22);
-          padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; direction: rtl; text-align: right; font-size: calc(13.5px * var(--ts, 1)); }
-.notice p { margin: 0; flex: 1 1 300px; line-height: 1.5; }
-.notice .nb { display: flex; gap: 8px; flex-wrap: wrap; }
-.notice button { font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--accent); }
-.notice .ok { background: var(--tab-on); color: var(--on-accent, #fff); } .notice .del { background: var(--surface); color: var(--accent); }
+          padding: 10px 12px 10px 14px; display: flex; gap: 12px; align-items: center; direction: rtl; text-align: right; font-size: calc(13px * var(--ts, 1)); }
+.notice p { margin: 0; flex: 1 1 auto; min-width: 0; line-height: 1.5; color: var(--ink-2); }
+.notice p b { color: var(--ink); }
+.notice .ok { flex: none; font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer; border: 0;
+              background: var(--tab-on); color: var(--on-accent, #fff); }
+.notice .del { font: inherit; font-weight: 600; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer;
+               text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 640px) { .notice { left: 8px; right: 8px; padding: 8px 10px 8px 12px; gap: 10px; font-size: calc(12.5px * var(--ts, 1)); } .notice p { line-height: 1.45; } }
+/* the small drawn icons beside a word (report_html.UI_ICONS): a line in the colour of the text, the size of a capital */
+.gi { display: inline-block; width: 1.15em; height: 1.15em; flex: none; vertical-align: -.2em; fill: none; stroke: currentColor;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* "skip to the content": the first stop of the keyboard */
 .skip { position: fixed; right: 10px; top: -80px; z-index: 60; background: var(--tab-on); color: var(--on-accent, #fff) !important; padding: 10px 16px; border-radius: 8px;
         font-weight: 700; text-decoration: none; }
@@ -168,8 +174,9 @@ tr.tt-hide { display: none; }
 .hicons svg { width: 18px; height: 18px; flex: none; }
 @media (max-width: 640px) { .hicons .hl { display: none; } .hicons button { width: 38px; padding: 0; } }
 @media print { .hicons { display: none !important; } }
-/* the bar at the top of a page: the way to the site's other pages (on the right), the corner buttons (on the left), the
-   outside links after them; a line under it keeps it apart from the page itself. The same on every page. */
+/* the bar at the top of a page: the way to the site's other pages and the outside links (on the right), the corner
+   buttons (on the left), a page's own corner (who is signed in, the admins' way in) beside them; a line under it keeps it
+   apart from the page itself. The same on every page. */
 .sitebar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "nav more icons"; align-items: start; gap: 8px;
   padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--grid); }
 .sitebar > nav.navlinks { grid-area: nav; } .sitebar > .navlinks.more { grid-area: more; } .sitebar > .hicons { grid-area: icons; }
@@ -180,11 +187,12 @@ tr.tt-hide { display: none; }
 .sitebar .navlinks a:hover, .sitebar .navlinks button:hover { border-color: var(--accent); }
 .sitebar .navlinks a.home { color: var(--on-accent, #fff); background: var(--tab-on, color-mix(in srgb, var(--accent) 88%, #000)); border-color: transparent; }
 .sitebar .navlinks a.home:hover { background: color-mix(in srgb, var(--accent) 76%, #000); }
-@media (max-width: 640px) {   /* phones: the site's pages and the corner buttons, then the outside links in a row of their own */
-  .sitebar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nav icons" "more more"; margin-bottom: 10px; padding-bottom: 10px; }
-  .navlinks { gap: 6px; } .sitebar .navlinks a, .sitebar .navlinks button { height: 36px; padding: 0 11px; font-size: calc(13px * var(--ts, 1)); }
+@media (max-width: 640px) {   /* phones: the links in one row that scrolls sideways, the corner buttons beside it; a page's own corner under them */
+  .sitebar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nav icons" "more more"; row-gap: 0; margin-bottom: 10px; padding-bottom: 10px; }
+  .sitebar > .navlinks.more { margin-top: 8px; }   /* no row-gap: a bar without that corner gets no empty line */
+  .navlinks { gap: 6px; } .sitebar .navlinks a, .sitebar .navlinks button { flex: none; height: 36px; padding: 0 11px; font-size: calc(13px * var(--ts, 1)); }
   .sitebar .navlinks { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding-bottom: 2px; }
-  .sitebar .navlinks::-webkit-scrollbar { display: none; } .sitebar .navlinks > * { flex: none; } }   /* one row each, sideways */
+  .sitebar .navlinks::-webkit-scrollbar { display: none; } .sitebar .navlinks > * { flex: none; } }
 /* the row number (מס״ד) each table starts with: narrow and quiet */
 th.ttn, td.ttn { width: 1%; white-space: nowrap; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 td.ttn { font-size: calc(12px * var(--ts, 1)); }
@@ -723,7 +731,7 @@ function list() {
   comps.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   $("list").innerHTML = comps.map(c => { const e = LIVE[c.slug];
     return `<div class="comp" data-k="${esc(c.slug)}"><h3>${esc(heDates(c.title))}</h3>
-      ${D.comps.some(x => x.slug === c.slug) || (D.live && D.live.comps && D.live.comps[c.slug]) ? `<a class="qrl" href="../${esc(c.slug)}/qr/">🖨️ קודי QR להדפסה</a>` : ""}
+      ${D.comps.some(x => x.slug === c.slug) || (D.live && D.live.comps && D.live.comps[c.slug]) ? `<a class="qrl" href="../${esc(c.slug)}/qr/"><svg class='gi' viewBox='0 0 24 24' aria-hidden='true'><path d='M7 8.5V3.5h10v5'/><rect x='3.5' y='8.5' width='17' height='8' rx='2'/><path d='M7 13.5h10v7H7Z'/></svg> קודי QR להדפסה</a>` : ""}
       <div class="meta">${c.date ? `${esc(fdate(c.date))} · ` : ""}${esc(c.slug)}${c.only ? " · עוד אין דוח" : ""}${e ? ` · <span class="live"><i></i>יש קישור חי</span>${e.by ? ` · עודכן ע״י ${esc(e.by)}` : ""}` : ""}</div>
       <label for="u-${esc(c.slug)}">קישור לתוצאות החיות</label><input id="u-${esc(c.slug)}" dir="ltr" value="${esc(e?.url || "")}" placeholder="https://jp.mulka2.com/cloud/live/…">
       <div class="act"><button type="button" class="pri" data-save>שמירה</button>${e ? `<button type="button" class="del" data-del>הסרת הקישור</button>` : ""}</div>
@@ -1282,8 +1290,8 @@ function noticeInit() {
   if (lsGet("lc-notice")) return;
   const el = document.createElement("div");
   el.className = "notice"; el.setAttribute("role", "region"); el.setAttribute("aria-label", "פרטיות ועוגיות");
-  el.innerHTML = `<p><b>פרטיות:</b> האתר לא משתמש בעוגיות (cookies), לא עוקב אחריך ולא מציג פרסומות. רק ההעדפות שבחרת – צבעים, גודל טקסט ונגישות – נשמרות בדפדפן שלך, כדי שיישארו גם בפעם הבאה.</p>
-    <div class="nb"><button type="button" class="ok">הבנתי</button><button type="button" class="del">מחיקת ההעדפות השמורות</button></div>`;
+  el.innerHTML = `<p><b>פרטיות:</b> האתר לא משתמש בעוגיות (cookies), לא עוקב אחריך ולא מציג פרסומות. רק ההעדפות שבחרת – צבעים, גודל טקסט ונגישות – נשמרות בדפדפן שלך
+    (<button type="button" class="del">למחוק אותן</button>).</p><button type="button" class="ok">הבנתי</button>`;
   document.body.appendChild(el);
   el.querySelector(".ok").addEventListener("click", e => { e.stopPropagation(); lsSet("lc-notice", "1"); el.remove(); });
   el.querySelector(".del").addEventListener("click", e => { e.stopPropagation(); STORE.forEach(k => lsSet(k, "")); location.reload(); });
