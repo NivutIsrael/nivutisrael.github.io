@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-m8pI6OeIh6XsBuluBrmTNavaRkGRgbstdf7ZB/rCEFo=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ubkhcoojPy1VhTZlDu9se+Iev2FWYNQ6J9RtudauMm8=' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -67,6 +67,17 @@ input[type=file] { padding: 8px; }
 .urow .ur-t, .urow .ur-have { grid-column: 1; }          /* a row without its own button (a file of no known kind) too */
 .urow .ur-t b { font-size: calc(14px * var(--ts, 1)); } .urow .ur-t small, .urow .ur-have { color: var(--muted); font-size: calc(12.5px * var(--ts, 1)); }
 .urow .ur-have span, .urow .ur-new span, .urow .ur-gone span { overflow-wrap: anywhere; }
+/* the admins: one line each - name, email, access, what the owner may do */
+.admscroll { overflow-x: auto; }
+table.adm { width: 100%; border-collapse: collapse; font-size: calc(14px * var(--ts, 1)); }
+table.adm th, table.adm td { text-align: center; padding: 7px 8px; border-top: 1px solid var(--rule); vertical-align: middle; }
+table.adm th { font-size: calc(12.5px * var(--ts, 1)); color: var(--muted); font-weight: 600; border-top: 0; }
+table.adm td.em { color: var(--ink-2); overflow-wrap: anywhere; } table.adm tr.off td { color: var(--muted); }
+table.adm td.acts { white-space: nowrap; } table.adm td.acts button { padding: 4px 10px; font-size: calc(13px * var(--ts, 1)); margin: 2px; }
+table.adm .tag { display: inline-block; font-size: calc(11px * var(--ts, 1)); font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px;
+  padding: 0 7px; margin-inline-start: 4px; vertical-align: 1px; }
+table.adm .st { font-size: calc(12.5px * var(--ts, 1)); font-weight: 600; } table.adm .st.on { color: var(--green); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* said, not shown */
 .lxhave { font-size: calc(12.5px * var(--ts, 1)); margin: 4px 0 0; } .lxhave a { overflow-wrap: anywhere; }
 .lxhave .fb { display: inline-flex; gap: 6px; margin-inline-start: 6px; vertical-align: middle; } .lxhave .rpbox { margin-top: 4px; }
 /* the files the competition has, each on its line in its row: its size, a new version of it, its removal */
@@ -369,6 +380,20 @@ td.ttn { font-size: calc(12px * var(--ts, 1)); }
         <div id="cflist"></div>
         <datalist id="cfnames"></datalist><datalist id="cfclubs"></datalist>
       </section>
+      <section class="card" id="admcard" hidden>
+        <h2>מנהלים</h2>
+        <p class="note">מי שנכנס לניהול האתר עם קוד במייל: רק כתובת שברשימה מקבלת קוד. השם הוא מה שהאתר מראה (למשל מי עדכן קישור);
+          המייל מופיע רק כאן, אצל בעל האתר. השהיה או הסרה מוציאה את המנהל תוך דקה, ובעל האתר עצמו תמיד נשאר.</p>
+        <p class="note" id="admnote" hidden></p>
+        <div id="admbox" hidden>
+          <div id="admlist"></div>
+          <h3 class="sub">מנהל חדש</h3>
+          <div class="row"><div><label for="adme">המייל שלו</label><input id="adme" type="email" dir="ltr" maxlength="120" autocomplete="off" spellcheck="false"></div>
+            <div><label for="admn">השם שלו באתר</label><input id="admn" maxlength="40" autocomplete="off" placeholder="דנה כהן"></div></div>
+          <div class="act"><button type="button" class="pri" id="admadd">הוספה</button></div>
+        </div>
+        <p class="msg" id="admmsg" role="status"></p>
+      </section>
     </div>
   </main>
 </div>
@@ -529,7 +554,7 @@ CAL.addEventListener("focusout", ev => {      // Tab out of the calendar closes 
 });
 const GW = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]{20,}\/exec$/.test(D.gateway || "") ? D.gateway : "";
 let MODE = "", GWT = "";       // "gh": a GitHub key in this tab; "gw": an email sign-in, the gateway keeps the key
-const STATUS = { auth: 401, conflict: 409, github: 502, busy: 429, scope: 403 };
+const STATUS = { auth: 401, conflict: 409, github: 502, busy: 429, scope: 403, owner: 403, exists: 409, missing: 404 };
 async function gw(a, body = {}, tries = 3) {
   let j = null;
   try {
@@ -652,7 +677,63 @@ async function enter() {        // signed in (either way): the links, then the u
   list();
   await dataInit();          // the upload - awaited, so the sign-in is done when it is
   await clubsInit();
+  await adminsInit();
 }
+// ---- the admins: who may get a code, under which name. The gateway keeps the list and shows it to the site's owner only
+// (the account it runs as): anyone else signed in does not see this card. An address is shown here, nowhere else.
+let ADMS = [];
+const ADM_WHY = { exists: "הכתובת כבר ברשימה", missing: "הכתובת כבר לא ברשימה – רעננו את הדף", owner: "רק בעל האתר מנהל את רשימת המנהלים" };
+async function adminsInit() {
+  const card = $("admcard"), note = $("admnote");
+  card.hidden = true; $("admbox").hidden = true; note.hidden = true; $("admlist").innerHTML = ""; say($("admmsg"), "", true); ADMS = [];
+  const tell = text => { card.hidden = false; note.hidden = false; note.textContent = text; };
+  if (MODE === "gh") return tell("רשימת המנהלים שנכנסים עם קוד במייל מנוהלת כאן בכניסה במייל של בעל האתר. מי שנכנס עם מפתח GitHub – לפי ההרשאות במאגר ב-GitHub.");
+  if (MODE !== "gw") return;
+  try { ADMS = (await gw("admins")).admins || []; }
+  catch (e) {
+    if (e.code === "owner") return;                            // an admin, not the owner: not theirs
+    return tell(e.code === "bad" ? "ניהול המנהלים מכאן יעבוד אחרי שבעל האתר יעדכן את שרת הכניסה (Code.gs – גרסה חדשה של אותה פריסה). עד אז הרשימה היא ADMINS ב-Script properties."
+                                 : "לא הצלחנו לקרוא את רשימת המנהלים: " + why(e));
+  }
+  card.hidden = false; $("admbox").hidden = false; drawAdmins();
+}
+function drawAdmins() {
+  const list = [...ADMS.filter(a => a.on), ...ADMS.filter(a => !a.on)], off = ADMS.filter(a => !a.on).length;
+  const row = a => `<tr class="${a.on ? "" : "off"}"><td><b>${esc(a.name)}</b>${a.owner ? `<span class="tag">בעל האתר</span>` : ""}${a.me ? `<span class="tag">את/ה</span>` : ""}</td>`
+    + `<td class="em" dir="ltr">${esc(a.email)}</td><td><span class="st ${a.on ? "on" : ""}">${a.on ? "יש גישה" : "מושהה"}</span></td>`
+    + `<td class="acts"><button type="button" data-adm="rename" data-e="${esc(a.email)}" aria-label="שינוי השם של ${esc(a.name)}">שינוי שם</button>`
+    + (a.owner || a.me ? "" : `<button type="button" data-adm="${a.on ? "off" : "on"}" data-e="${esc(a.email)}" aria-label="${a.on ? "השהיית הגישה של" : "החזרת הגישה של"} ${esc(a.name)}">${a.on ? "השהיה" : "החזרה"}</button>`
+        + `<button type="button" class="del" data-adm="remove" data-e="${esc(a.email)}" aria-label="הסרת ${esc(a.name)} מהמנהלים">הסרה</button>`) + `</td></tr>`;
+  $("admlist").innerHTML = `<div class="admscroll"><table class="adm"><thead><tr><th>שם באתר</th><th>מייל</th><th>גישה</th><th><span class="sr">פעולות</span></th></tr></thead>`
+    + `<tbody>${list.map(row).join("")}</tbody></table></div><p class="note" style="font-size: calc(13px * var(--ts, 1));margin-top:6px">${list.length - off} עם גישה${off ? ` · ${off} מושהים` : ""}</p>`;
+}
+const lockAdm = on => $("admcard").querySelectorAll("button").forEach(b => b.disabled = on);
+async function admSet(op, email, name) {
+  const m = $("admmsg"); lockAdm(true); say(m, "שומר…", true);
+  try {
+    ADMS = (await gw("admins_set", { op, email, name })).admins || []; drawAdmins();
+    say(m, { add: "נוסף – מעכשיו הכתובת יכולה לקבל קוד כניסה.", rename: "השם עודכן.", off: "הגישה הושהתה – הכניסה שלו תיגמר תוך דקה.",
+             on: "הגישה הוחזרה.", remove: "הוסר מהמנהלים." }[op], true);
+    return true;
+  } catch (e) { say(m, ADM_WHY[e.code] || why(e)); return false; }
+  finally { lockAdm(false); }
+}
+$("admlist").addEventListener("click", async ev => {
+  const b = ev.target.closest("[data-adm]"), a = b && ADMS.find(x => x.email === b.dataset.e);
+  if (!a) return;
+  const op = b.dataset.adm; let name;
+  if (op === "rename") { name = prompt(`השם של ${a.name} באתר:`, a.name); if (name == null || !name.trim() || name.trim() === a.name) return; name = name.replace(/\s+/g, " ").trim(); }
+  if (op === "off" && !confirm(`להשהות את הגישה של ${a.name}? הכניסה שלו תיגמר תוך דקה, ואפשר להחזיר אותה אחר כך.`)) return;
+  if (op === "remove" && !confirm(`להסיר את ${a.name} (${a.email}) מהמנהלים? הכתובת לא תקבל יותר קוד, והכניסה שלו תיגמר תוך דקה.`)) return;
+  await admSet(op, a.email, name);
+  $("admlist").querySelector(`[data-adm][data-e="${CSS.escape(a.email)}"]`)?.focus();
+});
+$("admadd").onclick = async () => {
+  const email = $("adme").value.trim().toLowerCase(), name = $("admn").value.replace(/\s+/g, " ").trim(), m = $("admmsg");
+  if (!EMAIL.test(email)) { say(m, "כתובת מייל לא תקינה"); $("adme").focus(); return; }
+  if (!name) { say(m, "כתבו שם – זה מה שהאתר מראה במקום המייל"); $("admn").focus(); return; }
+  if (await admSet("add", email, name)) { $("adme").value = ""; $("admn").value = ""; }
+};
 // ---- the email code: the gateway sends it to an approved address. The code goes with the request this tab made (its rid):
 // nobody else can try it. The session lasts 12 hours, in this tab only; a sign-in on a tracking page is not one for here.
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/, RID = /^[0-9a-f]{32}$/;
@@ -719,7 +800,8 @@ $("em").addEventListener("keydown", e => { if (e.key === "Enter") sendCode(); })
 $("toKey").onclick = e => { e.preventDefault(); how(false); };
 $("toEmail").onclick = e => { e.preventDefault(); how(true); };
 function reset(text, ok) { TOKEN = ""; ME = ""; GWT = ""; MODE = ""; WATCH++; WATCHING.clear(); CAN_DATA = false; CFIX = null; try { sessionStorage.removeItem("lc-admin"); sessionStorage.removeItem("lc-admin-gw"); } catch (e) {}
-  $("who").textContent = ""; $("panel").hidden = true; $("upcard").hidden = true; $("clubcard").hidden = true; $("login").hidden = false;
+  $("who").textContent = ""; $("panel").hidden = true; $("upcard").hidden = true; $("clubcard").hidden = true; $("admcard").hidden = true; $("login").hidden = false;
+  ADMS = []; $("admlist").innerHTML = "";
   ["cfmsg", "cfstat", "cflist"].forEach(i => { $(i).textContent = ""; });
   $("ugo").disabled = false; $("umsg").textContent = ""; $("ustat").textContent = ""; $("ufolder").innerHTML = ""; CHOSEN.length = 0; HAVE_FILES = []; drawRows(); say($("lmsg"), text, ok); }
 async function logout() {
